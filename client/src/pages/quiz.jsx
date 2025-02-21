@@ -132,6 +132,17 @@ const QuizGenerator = () => {
         description: "Quiz results saved successfully",
         variant: "default",
       });
+
+      // Check if there are other students in the quiz
+      const otherStudents = await checkOtherStudentsInQuiz(); // Implement this function to check for other students
+      if (!otherStudents) {
+        // If no other students, proceed to show results immediately
+        setShowStats(true);
+        setShowQuiz(false);
+      } else {
+        // If there are other students, wait for them to finish
+        // You can implement a mechanism to notify the teacher when all students have completed
+      }
     } catch (error) {
       console.error('Failed to store quiz statistics:', error);
       toast({
@@ -140,9 +151,6 @@ const QuizGenerator = () => {
         variant: "destructive",
       });
     }
-
-    setShowStats(true);
-    setShowQuiz(false);
   };
 
   // Add this function to handle summary regeneration
@@ -465,12 +473,32 @@ const QuizJoinSection = () => {
       setError(error.message || 'Failed to join quiz');
     });
 
+    // Listen for final scores
+    socket.on('final_scores', ({ scores, studentNames }) => {
+        if (isTeacher) {
+            navigate('/quiz-results', { 
+                state: { 
+                    scores,
+                    studentNames
+                } 
+            });
+        } else {
+            navigate('/student-results', { 
+                state: { 
+                    score: scores[userInfo._id],
+                    total: questionsList.length 
+                }
+            });
+        }
+    });
+
     return () => {
       socket.off('room_verified');
       socket.off('connect_error');
       socket.off('error');
+      socket.off('final_scores');
     };
-  }, [joinCode, navigate]);
+  }, [joinCode, navigate, userInfo]);
 
   const handleJoinQuiz = async () => {
     try {

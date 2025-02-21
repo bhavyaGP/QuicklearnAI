@@ -181,15 +181,7 @@ async function uploadFile(req, res) {
         });
 
         await doubt.save();
-        // console.log("Doubt Created:", doubt);
 
-        // **Notify the assigned teacher in real-time**
-        // if (assignedTeacher) {
-        //     io.to(assignedTeacher.toString()).emit("new_doubt", {
-        //         message: "A new doubt has been assigned to you",
-        //         doubtId: doubt._id
-        //     });
-        // }
         await redis.hset(`doubt:${doubt._id}`, 'extractedText', text);
         res.status(200).json({
             message: "File uploaded successfully",
