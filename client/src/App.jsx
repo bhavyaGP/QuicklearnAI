@@ -25,6 +25,7 @@ import QuizLobby from './pages/QuizLobby'
 import QuizResults from './pages/QuizResults'
 import StudentResults from './pages/StudentResults'
 import StudentLobby from './pages/StudentLobby'
+import PrivateRoute from './components/PrivateRoute'
 
 function Home() {
   const contentRef = useRef()
@@ -94,9 +95,33 @@ function App() {
         <NavbarWrapper />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<ProfilePage />} />
-          <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <PrivateRoute 
+                element={<ProfilePage />} 
+                allowedRoles={['student']} 
+              />
+            } 
+          />
+          <Route 
+            path="/teacher-dashboard" 
+            element={
+              <PrivateRoute 
+                element={<TeacherDashboard />} 
+                allowedRoles={['teacher']} 
+              />
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <PrivateRoute 
+                element={<ProfilePage />} 
+                allowedRoles={['student', 'teacher']} 
+              />
+            } 
+          />
           <Route path="/quiz" element={<QuizGenerator />} />
           <Route path="/chatbot" element={<ChatBot />} />
           <Route path="/recommendations" element={<RecommendationPage />} />
@@ -104,34 +129,48 @@ function App() {
           <Route path="/doubt/create" element={<DoubtCreation />} />
           <Route path="/doubt/:doubtId/chat" element={<ChatRoom/>} />
           <Route path="/doubt/:doubtId/matched" element={<MatchedTeachers />} />
-          <Route path="/create-quiz" element={<CreateQuiz />} />
+          <Route 
+            path="/create-quiz" 
+            element={
+              <PrivateRoute 
+                element={<CreateQuiz />} 
+                allowedRoles={['teacher']} 
+              />
+            } 
+          />
           <Route path="/quiz-session/:roomId" element={<QuizSession />} />
           <Route path="/quiz-preview" element={<QuizPreview />} />
           <Route path="/quiz-preview-new" element={<QuizPreviewNew />} />
-          <Route path="/quiz-lobby/:roomId" element={<QuizLobby />} />
+          <Route 
+            path="/quiz-lobby/:roomId" 
+            element={
+              <PrivateRoute 
+                element={<QuizLobby />} 
+                allowedRoles={['teacher', 'student']} 
+              />
+            } 
+          />
           <Route path="/quiz-results" element={<QuizResults />} />
           <Route path="/student-results" element={<StudentResults />} />
           <Route path="/student-lobby/:roomId" element={<StudentLobby />} />
         </Routes>
         
-        <LoginModal 
-          isOpen={showLoginModal} 
-          onClose={() => setShowLoginModal(false)}
-          onSignUpClick={() => {
-            setShowLoginModal(false);
-            setShowSignUpModal(true);
-          }}
-          onLogin={handleLogin}
-        />
-        
-        <SignUpModal 
-          isOpen={showSignUpModal} 
-          onClose={() => setShowSignUpModal(false)}
-          onSwitchToLogin={() => {
-            setShowSignUpModal(false);
-            setShowLoginModal(true);
-          }}
-        />
+        {showLoginModal && (
+          <LoginModal 
+            isOpen={showLoginModal} 
+            onClose={() => setShowLoginModal(false)} 
+          />
+        )}
+        {showSignUpModal && (
+          <SignUpModal 
+            isOpen={showSignUpModal} 
+            onClose={() => setShowSignUpModal(false)} 
+            onSwitchToLogin={() => {
+              setShowSignUpModal(false);
+              setShowLoginModal(true);
+            }}
+          />
+        )}
       </div>
     </Router>
   );
