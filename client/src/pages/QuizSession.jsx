@@ -16,6 +16,7 @@ const QuizSession = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const userInfo = JSON.parse(localStorage.getItem('user-info'));
   const isTeacher = userInfo?.role === 'teacher';
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     console.log("userInfo", userInfo);
@@ -74,6 +75,9 @@ const QuizSession = () => {
     // Listen for final scores
     socket.on('final_scores', ({ scores, studentNames }) => {
       if (isTeacher) {
+        setScores(scores);
+        setShowResults(true);
+        // Redirect to QuizResults page with scores and studentNames
         navigate('/quiz-results', { 
           state: { 
             scores,

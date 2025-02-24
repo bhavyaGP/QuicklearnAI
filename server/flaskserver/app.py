@@ -702,34 +702,7 @@ def generate_quiz(topic: str, num_questions: int, difficulty: str):
     response = llm.invoke(prompt)
     return response.content if hasattr(response, 'content') else response.text
 
-@app.route("/llm_quiz", methods=["POST"])
-def quiz_endpoint():
-    data = request.json
-    topic = data.get("topic")
-    num_questions = data.get("num_questions", 5)
-    difficulty = data.get("difficulty", "medium").lower()
-    print("Topic:", topic,"num_questions:",num_questions,"difficulty:",difficulty)
-    
-    if not topic:
-        return jsonify({"error": "Topic is required"}), 400
-    
-    try:
-        response_content = generate_quiz(topic, num_questions, difficulty)
-        
-        try:
-            result = json.loads(response_content)
-        except json.JSONDecodeError:
-            json_start = response_content.find('{')
-            json_end = response_content.rfind('}') + 1
-            if json_start != -1 and json_end != -1:
-                json_str = response_content[json_start:json_end]
-                result = json.loads(json_str)
-            else:
-                return jsonify({"error": "Could not parse JSON from response"}), 500
-        
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/', methods=['GET'])
 def health():
