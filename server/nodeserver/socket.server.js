@@ -67,6 +67,35 @@ io.on("connection", (socket) => {
         }
     });
 
+    // Handle doubt assignment notifications
+    socket.on("doubt_assigned", ({ doubtId, teacherId }) => {
+        try {
+            // Emit notification to the assigned teacher
+            io.to(teacherId).emit("new_doubt", {
+                message: "A new doubt has been assigned to you",
+                doubtId: doubtId
+            });
+            console.log(`Doubt ${doubtId} notification sent to teacher ${teacherId}`);
+        } catch (error) {
+            console.error("Error sending doubt notification:", error);
+            socket.emit("error", { message: "Failed to notify teacher" });
+        }
+    });
+
+    socket.on("doubt_status_update", ({ doubtId, status }) => {
+        try {
+            // Broadcast status update to all users in the doubt room
+            io.to(doubtId).emit("doubt_updated", {
+                doubtId,
+                status
+            });
+            console.log(`Doubt ${doubtId} status updated to ${status}`);
+        } catch (error) {
+            console.error("Error updating doubt status:", error);
+            socket.emit("error", { message: "Failed to update doubt status" });
+        }
+    });
+
     // Handle quiz-related events
     socket.on("join_quiz_room", ({ roomId, userId, role }) => {
         try {
@@ -216,7 +245,7 @@ io.on("connection", (socket) => {
                 endedAt: new Date().toISOString()
             };
 
-            await redis.set(roomId, JSON.stringify(resultData), "EX",3600); // Store for 1 hour
+            await redis.set(roomId, JSON.stringify(resultData), "EX", 3600); // Store for 1 hour
 
             io.to(roomId).emit("final_scores", { 
                 scores: room.scores,
@@ -281,32 +310,31 @@ io.on("connection", (socket) => {
     });
 
     // Store quiz in Redis when teacher creates it
-   // Add this after the connection handler
-socket.on("store_quiz", async ({ roomId, quizData, teacherId }) => {
-    try {
-        // Store quiz data in Redis with a prefix
-        await redis.set(`quiz:${roomId}`, JSON.stringify(quizData));
-        
-        // Initialize room data
-        quizRooms.set(roomId, {
-            teacher: teacherId,
-            students: [],
-            scores: {},
-            socketIds: { [teacherId]: socket.id },
-            studentNames: {}
-        });
-        
-        // Join the socket to the room
-        socket.join(roomId);
-        
-        console.log(`Quiz stored for room ${roomId}`);
-    } catch (error) {
-        console.error("Error storing quiz:", error);
-        socket.emit("error", { message: "Failed to store quiz" });
-    }
-});
+    socket.on("store_quiz", async ({ roomId, quizData, teacherId }) => {
+        try {
+            // Store quiz data in Redis with a prefix
+            await redis.set(`quiz:${roomId}`, JSON.stringify(quizData));
+            
+            // Initialize room data
+            quizRooms.set(roomId, {
+                teacher: teacherId,
+                students: [],
+                scores: {},
+                socketIds: { [teacherId]: socket.id },
+                studentNames: {}
+            });
+            
+            // Join the socket to the room
+            socket.join(roomId);
+            
+            console.log(`Quiz stored for room ${roomId}`);
+        } catch (error) {
+            console.error("Error storing quiz:", error);
+            socket.emit("error", { message: "Failed to store quiz" });
+        }
+    });
 
-    // Add this after the store_quiz event handler
+    // Verify room existence
     socket.on('verify_room', async ({ roomId, userId, role }) => {
         try {
             const exists = await redis.exists(`quiz:${roomId}`);

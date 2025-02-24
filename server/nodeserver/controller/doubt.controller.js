@@ -87,12 +87,13 @@ if (!doubt) return res.status(404).json({ error: "Doubt not found" });
         // Update Redis doubt status
         await redis.hset(`doubt:${doubtId}`, "status", "assigned", "teacher", assignedTeacher);
 
-
-        io.to(assignedTeacher).emit("new_doubt", {
-            doubtId,
-            student: doubt.student,
-            topic: doubt.topics
-        });
+        // Emit notification to the assigned teacher
+        if (assignedTeacher) {
+            io.to(assignedTeacher).emit("new_doubt", {
+                message: "A new doubt has been assigned to you",
+                doubtId: doubt._id,
+            });
+        }
         console.log(`Doubt ${doubtId} assigned to teacher ${assignedTeacher} and notified`);
         res.status(200).json({
             message: "Teacher assigned successfully",
@@ -145,4 +146,20 @@ async function getTeacherDoubts(req, res) {
 
 }
 
-module.exports = { matchdoubt, getPendingDoubts, getTeacherDoubts };
+async function setsolveddoubt(req,res){
+    try {
+        const { doubtId } = req.params;
+        const doubt = await Doubt.findById(doubtId);
+        if (!doubt) {
+            return res.status(404).json({ error: "Doubt not found" });
+        }
+        doubt.status = "solved";
+        await doubt.save();
+        res.status(200).json({ message: "Doubt marked as resolved" });
+    } catch (error) {
+        console.error("Error marking doubt as resolved:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
+module.exports = { matchdoubt, getPendingDoubts, getTeacherDoubts , setsolveddoubt};

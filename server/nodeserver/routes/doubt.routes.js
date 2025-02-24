@@ -3,7 +3,7 @@ const router = express.Router();
 
 
 
-const { matchdoubt, getPendingDoubts, getTeacherDoubts } = require("../controller/doubt.controller");
+const { matchdoubt, getPendingDoubts, getTeacherDoubts, setsolveddoubt } = require("../controller/doubt.controller");
 
 router.post("/match/:doubtId", matchdoubt);
 
@@ -18,6 +18,9 @@ router.get("/pending", getPendingDoubts);
  * Returns all doubts assigned to a specific teacher.
  */
 router.get("/teacher/:teacherId/doubts", getTeacherDoubts);
+//api for set status doubt to solved
+
+router.patch("/:doubtId/status", setsolveddoubt);
 
 module.exports = router;
 
