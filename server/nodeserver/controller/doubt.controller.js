@@ -153,7 +153,7 @@ async function setsolveddoubt(req,res){
         if (!doubt) {
             return res.status(404).json({ error: "Doubt not found" });
         }
-        doubt.status = "solved";
+        doubt.status = 'resolved';
         await doubt.save();
         res.status(200).json({ message: "Doubt marked as resolved" });
     } catch (error) {
