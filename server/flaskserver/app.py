@@ -703,7 +703,6 @@ def generate_quiz(topic: str, num_questions: int, difficulty: str):
     return response.content if hasattr(response, 'content') else response.text
 
 
-
 @app.route('/', methods=['GET'])
 def health():
     return jsonify({"status": "ok"}) 
