@@ -30,6 +30,9 @@ const ProfilePage = () => {
     fetchStatistics();
   }, []);
 
+  // Retrieve avatar from local storage
+  const avatar = localStorage.getItem('user-info') ? JSON.parse(localStorage.getItem('user-info')).avatar : '/default-avatar.png';
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
@@ -72,7 +75,7 @@ const ProfilePage = () => {
         <Card className="bg-black/40 backdrop-blur-md border border-white/10">
           <CardHeader className="flex flex-row items-center space-x-6">
             <Avatar className="h-24 w-24">
-              <AvatarImage src="/default-avatar.png" />
+              <AvatarImage src={avatar} />
               <AvatarFallback className="bg-emerald-400/10 text-emerald-400">US</AvatarFallback>
             </Avatar>
             <div>

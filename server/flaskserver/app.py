@@ -146,9 +146,9 @@ def generate_summary_and_quiz(transcript, num_questions, language, difficulty):
         if hasattr(response, 'content'):
             response_content = response.content
             try:
-                print("response_content:",response_content)
+                # print("response_content:",response_content)
                 response_dict = json.loads(response_content)
-                print("response_dict:",response_dict)
+                # print("response_dict:",response_dict)
                 return response_dict
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}")
@@ -358,7 +358,7 @@ class TextToSpeechManager:
                     engine.setProperty('volume', 1.0)
                     engine.say(text)
                     engine.runAndWait() 
-                    print("spoke")
+                    # print("spoke")
                     engine.startLoop(False)  # Start the event loop without blocking
                     engine.iterate()  # Process queued commands
                     engine.endLoop()  # End the event loop
@@ -598,7 +598,7 @@ def generate_mind_map(content):
 
 @app.route("/generate_mind_map", methods=['GET'])
 def generate_mind_map_endpoint():
-    print("✅ Endpoint called!")  # Debugging
+    # print("✅ Endpoint called!")  # Debugging
     video_url = request.args.get('video_url')
 
     if not video_url:

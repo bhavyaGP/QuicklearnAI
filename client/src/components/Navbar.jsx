@@ -24,6 +24,8 @@ function Navbar({ onSignUpClick, onLoginClick }) {
     window.location.reload();
   };
 
+  const avatar = localStorage.getItem('user-info') ? JSON.parse(localStorage.getItem('user-info')).avatar : 'https://github.com/shadcn.png';
+
   return (
     <nav className="fixed top-8 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,12 +75,9 @@ function Navbar({ onSignUpClick, onLoginClick }) {
                   <Link to={userType === 'teacher' ? '/teacher-dashboard' : '/dashboard'}>
                     <div className="transition-all duration-300 rounded-full hover:ring-2 hover:ring-[#00FF9D] hover:ring-offset-2 hover:ring-offset-black">
                       <Avatar>
-                        <AvatarImage 
-                          src={"https://github.com/shadcn.png"} 
-                          alt={"Profile"} 
-                        />
+                        <AvatarImage src={avatar} alt="Profile" />
                         <AvatarFallback className="bg-gray-600">
-                          {"SN"}
+                          {userType === 'teacher' ? 'T' : 'S'}
                         </AvatarFallback>
                       </Avatar>
                     </div>
