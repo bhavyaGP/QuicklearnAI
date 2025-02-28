@@ -89,6 +89,7 @@ async function handleregister(req, res) {
 
         let user;
         let newUser;
+        console.log("req.:",req.body);
 
         // Check if user already exists
         if (role === 'student') {
