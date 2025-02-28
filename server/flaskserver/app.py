@@ -97,7 +97,7 @@ def get_and_enhance_transcript(youtube_url):
         print(f"Error: {str(e)}")
         return None, None
 
-def generate_summary_and_quiz(transcript, num_questions, language, difficulty):
+def generate_summary_and_quiz(transcript, num_questions, language, difficulty, usermodel):
 
     try:
         
@@ -138,7 +138,7 @@ def generate_summary_and_quiz(transcript, num_questions, language, difficulty):
         Transcript: {transcript}
         """
         llm = ChatGroq(
-            model="llama-3.3-70b-specdec",
+            model=usermodel,
             temperature=0,
             groq_api_key=os.getenv("GROQ_API_KEY")
         )
@@ -170,12 +170,13 @@ def quiz():
     youtube_link = data.get('link')
     num_questions = data.get('qno')
     difficulty = data.get('difficulty')
-
+    usermodel = data.get('usermodel')
+    print(usermodel)
     if youtube_link:
         transcript, language = get_and_enhance_transcript(youtube_link)
         
         if transcript:
-            summary_and_quiz = generate_summary_and_quiz(transcript, num_questions, language, difficulty)
+            summary_and_quiz = generate_summary_and_quiz(transcript, num_questions, language, difficulty, usermodel)
             
             if summary_and_quiz: 
                 return jsonify(summary_and_quiz)

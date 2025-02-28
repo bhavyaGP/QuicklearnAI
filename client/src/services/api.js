@@ -70,14 +70,15 @@ export const summaryService = {
   }
 };
 export const quizService = {
-  generateQuiz: async (link, qno, difficulty) => {
+  generateQuiz: async (link, qno, difficulty, usermodel) => {
     try {
       const response = await api.post('/quiz', {
         link,
         qno,
-        difficulty
+        difficulty,
+        usermodel
       });
-      
+      console.log(usermodel);
       if (!response.data || !response.data.questions || !response.data.summary) {
         throw new Error('Invalid response format from server');
       }

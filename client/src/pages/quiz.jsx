@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import socket from '../utils/socket';
+import { motion } from "framer-motion";
 
 const QuizGenerator = () => {
   const { toast } = useToast();
@@ -29,6 +30,10 @@ const QuizGenerator = () => {
   // Form state
   const [youtubeLink, setYoutubeLink] = useState('');
   const [questionCount, setQuestionCount] = useState(5);
+
+  // Add new state for model dropdown
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('');
 
   // Add navigate hook
   const navigate = useNavigate();
@@ -68,7 +73,8 @@ const QuizGenerator = () => {
       const response = await quizService.generateQuiz(
         youtubeLink,
         questionCount,
-        selectedDifficulty
+        selectedDifficulty,
+        selectedModel
       );
       
       console.log('Quiz Service Response:', response);
@@ -152,7 +158,8 @@ const QuizGenerator = () => {
       const response = await quizService.generateQuiz(
         youtubeLink,
         questionCount,
-        selectedDifficulty
+        selectedDifficulty,
+        selectedModel
       );
       
       if (!response || !response.summary) {
@@ -178,6 +185,12 @@ const QuizGenerator = () => {
     // Navigate with the encoded URL
     const encodedUrl = encodeURIComponent(youtubeLink);
     window.location.href = `/mindmap?url=${encodedUrl}`; // Using direct navigation
+  };
+
+  // Add model selection handler
+  const handleModelSelect = (model) => {
+    setSelectedModel(model);
+    setIsModelDropdownOpen(false);
   };
 
   // Show quiz if active
@@ -309,6 +322,7 @@ const QuizGenerator = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24">
+      {loading && <LoadingAnimation />}
       <div className="flex flex-col items-center px-4 py-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
@@ -396,6 +410,39 @@ const QuizGenerator = () => {
                 )}
               </div>
 
+
+              {/* Model Dropdown */}
+              <div className="space-y-2 relative">
+                <label className="text-sm text-gray-400">
+                  Select Model
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-left text-white hover:border-[#00FF9D]/50 hover:ring-2 hover:ring-[#00FF9D]/20 transition-all duration-300"
+              >
+                {selectedModel || 'Select model'}
+              </button>
+
+              {isModelDropdownOpen && (
+                <div className="absolute w-full mt-1 bg-black/90 border border-white/10 rounded-xl overflow-hidden z-10">
+                  {[
+                    'ChatGroq (Short Videos and Faster Response)',
+                    'Gemini (Long Videos and Slower Response)'
+                  ].map((model) => (
+                    <button
+                      key={model}
+                      type="button"
+                      onClick={() => handleModelSelect(model)}
+                      className="w-full px-4 py-3 text-left hover:bg-[#00FF9D]/10 hover:text-[#00FF9D] transition-all duration-300"
+                    >
+                      {model}
+                      </button>
+                  ))}
+                </div>
+                )}
+        </div>
+
               {/* Generate Button */}
               <button
                 type="submit"
@@ -419,6 +466,39 @@ const QuizGenerator = () => {
             <QuizJoinSection />
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const LoadingAnimation = () => {
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="text-center">
+        <motion.div 
+          className="flex items-center justify-center mb-8"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div 
+            className="w-16 h-16 border-4 border-[#00FF9D]/30 border-t-[#00FF9D] rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-2xl font-bold mb-2">
+            Creating Your <span className="text-[#00FF9D]">Quiz</span>
+          </h2>
+          <p className="text-gray-400">
+            Analyzing video content and generating questions...
+          </p>
+        </motion.div>
       </div>
     </div>
   );
