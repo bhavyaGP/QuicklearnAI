@@ -82,7 +82,7 @@ function App() {
     const navigate = useNavigate();
 
     return (
-      <Navbar 
+      <Navbar
         onLoginClick={() => setShowLoginModal(true)}
         onSignUpClick={() => setShowSignUpModal(true)}
       />
@@ -95,76 +95,76 @@ function App() {
         <NavbarWrapper />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
-              <PrivateRoute 
-                element={<ProfilePage />} 
-                allowedRoles={['student']} 
+              <PrivateRoute
+                element={<ProfilePage />}
+                allowedRoles={['student']}
               />
-            } 
+            }
           />
-          <Route 
-            path="/teacher-dashboard" 
+          <Route
+            path="/teacher-dashboard"
             element={
-              <PrivateRoute 
-                element={<TeacherDashboard />} 
-                allowedRoles={['teacher']} 
+              <PrivateRoute
+                element={<TeacherDashboard />}
+                allowedRoles={['teacher']}
               />
-            } 
+            }
           />
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
-              <PrivateRoute 
-                element={<ProfilePage />} 
-                allowedRoles={['student', 'teacher']} 
+              <PrivateRoute
+                element={<ProfilePage />}
+                allowedRoles={['student', 'teacher']}
               />
-            } 
+            }
           />
           <Route path="/quiz" element={<QuizGenerator />} />
           <Route path="/chatbot" element={<ChatBot />} />
           <Route path="/recommendations" element={<RecommendationPage />} />
           <Route path="/mindmap" element={<MindMap />} />
-          <Route path="/doubt/create" element={<DoubtCreation />} />
-          <Route path="/doubt/:doubtId/chat" element={<ChatRoom/>} />
+          <Route path="/doubt/create" element={<PrivateRoute element={<DoubtCreation />} allowedRoles={['student']} />} />
+          <Route path="/doubt/:doubtId/chat" element={<ChatRoom />} />
           <Route path="/doubt/:doubtId/matched" element={<MatchedTeachers />} />
-          <Route 
-            path="/create-quiz" 
+          <Route
+            path="/create-quiz"
             element={
-              <PrivateRoute 
-                element={<CreateQuiz />} 
-                allowedRoles={['teacher']} 
+              <PrivateRoute
+                element={<CreateQuiz />}
+                allowedRoles={['teacher']}
               />
-            } 
+            }
           />
           <Route path="/quiz-session/:roomId" element={<QuizSession />} />
           <Route path="/quiz-preview" element={<QuizPreview />} />
           <Route path="/quiz-preview-new" element={<QuizPreviewNew />} />
-          <Route 
-            path="/quiz-lobby/:roomId" 
+          <Route
+            path="/quiz-lobby/:roomId"
             element={
-              <PrivateRoute 
-                element={<QuizLobby />} 
-                allowedRoles={['teacher', 'student']} 
+              <PrivateRoute
+                element={<QuizLobby />}
+                allowedRoles={['teacher', 'student']}
               />
-            } 
+            }
           />
           <Route path="/quiz-results" element={<QuizResults />} />
           <Route path="/student-results" element={<StudentResults />} />
           <Route path="/student-lobby/:roomId" element={<StudentLobby />} />
         </Routes>
-        
+
         {showLoginModal && (
-          <LoginModal 
-            isOpen={showLoginModal} 
-            onClose={() => setShowLoginModal(false)} 
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
           />
         )}
         {showSignUpModal && (
-          <SignUpModal 
-            isOpen={showSignUpModal} 
-            onClose={() => setShowSignUpModal(false)} 
+          <SignUpModal
+            isOpen={showSignUpModal}
+            onClose={() => setShowSignUpModal(false)}
             onSwitchToLogin={() => {
               setShowSignUpModal(false);
               setShowLoginModal(true);
