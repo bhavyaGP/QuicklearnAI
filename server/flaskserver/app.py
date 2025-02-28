@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
+from threading import Thread
+import pyttsx3
+import html
+from bs4 import BeautifulSoup
 from flask_cors import CORS 
 import re
 import json
-from langchain.llms import GPT4All  
+from langchain_community.llms import GPT4All  
 from langchain_groq import ChatGroq
 import os
 from dotenv import load_dotenv
@@ -21,37 +25,32 @@ import logging
 from bson.objectid import ObjectId
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import PyPDFLoader
-from langchain.indexes import VectorstoreIndexCreator
-from langchain.vectorstores import FAISS
-from langchain.embeddings import SentenceTransformerEmbeddings
-from langchain.document_loaders import PyMuPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import PyPDFLoader
+#from langchain_community.indexes import VectorstoreIndexCreator  # Commented out due to ImportError
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.chains import RetrievalQA
 from io import BytesIO
 from PyPDF2 import PdfReader  
 from langchain.schema import Document  
-import threading
-import pyttsx3
-from threading import Thread
-import html
-from bs4 import BeautifulSoup
-import time
+import chromadb
+from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
+#from langchain.document_loaders import PyPDFLoader
+from pptx import Presentation
+import redis
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
 
-app = Flask(__name__)
-
-# Database connection setup for our recommendation , uncomment it jab recommendations ki testing karoo 
 app = Flask(__name__)
 SECRET_KEY = "quick" 
-mongo_client = MongoClient("mongodb://localhost:27017/")  # Replace with your MongoDB URI
+mongo_client = MongoClient("mongodb://localhost:27017/quicklearnai") 
 db = mongo_client["quicklearnai"]
 topics_collection = db["statistics"]
 
-
-
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "http://localhost:3000"],
+        "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -60,16 +59,7 @@ CORS(app, resources={
 
 formatter = TextFormatter()
 
-import json
-import re
-from youtube_transcript_api import YouTubeTranscriptApi
-import google.generativeai as genai
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-# Configure Gemini API once globally
-google_api_key = os.getenv("GENAI_API_KEY")
+google_api_key = "AIzaSyCVFhQYpUkpcceDC5mTkbc0GzU9--sAkz4"
 genai.configure(api_key=google_api_key)
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct model name
 
@@ -103,7 +93,7 @@ def get_and_enhance_transcript(youtube_url, model_type='gemini'):
         # Enhanced transcript prompt
         prompt = f"""
         Act as a transcript cleaner. Generate a new transcript with the same context and content as the given transcript.
-        If there's a revision portion, differentiate it from the actual transcript.
+        If there’s a revision portion, differentiate it from the actual transcript.
         Output in sentences line by line. If the transcript lacks educational content, return 'Fake transcript'.
         Transcript: {formatted_transcript}
         """
@@ -194,10 +184,10 @@ def quiz():
 
     data = request.json
     youtube_link = data.get('link')
-    num_questions = int(data.get('qno'))  # Default to 5 if not provided
-    difficulty = data.get('difficulty')  # Default to medium
-    model_type = data.get('model')  # Default to gemini, can be 'chatgroq' or 'gemini'
-    print(f"Received request with link: {youtube_link}, num_questions: {num_questions}, difficulty: {difficulty}, model: {model_type}")
+    num_questions = int(data.get('qno', 5))  # Default to 5 if not provided
+    difficulty = data.get('difficulty', 'medium')  # Default to medium
+    model_type = data.get('model', 'chatgroq')  # Default to gemini, can be 'chatgroq' or 'gemini'
+
     if not youtube_link:
         return jsonify({"error": "No YouTube URL provided"}), 400
 
@@ -211,7 +201,6 @@ def quiz():
     else:
         return jsonify({"error": "Failed to generate quiz"}), 500
 
-
 # recommendation
 def validate_token_middleware():
     def middleware(func):
@@ -224,9 +213,11 @@ def validate_token_middleware():
                 return jsonify({"message": "Unauthorized: No token provided"}), 401
             
             try:
+                # Decoding the token using the correct jwt.decode()
                 decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 request.user_id = decoded.get("id")
                 request.user_role = decoded.get("role")  # Optional
+                
                 return func(*args, **kwargs)
             except jwt.ExpiredSignatureError:
                 return jsonify({"message": "Unauthorized: Token has expired"}), 401
@@ -241,39 +232,82 @@ def validate_token_middleware():
 # Function to interact with LLaMA API
 def llama_generate_recommendations(prompt):
     try:
-        # Configure the API key
-        api_key=os.getenv("GENAI_API_KEY")
-        genai.configure(api_key=api_key)
+        llm = ChatGroq(
+            model="llama-3.3-70b-specdec",
+            temperature=0,
+            groq_api_key=os.getenv("GROQ_API_KEY")
+        )
         
-        # Create Gemini Flash model instance
-        model = GenerativeModel('gemini-2.0-flash-exp')
+        response = llm.invoke(prompt)
         
-        # Generate response
-        response = model.generate_content(prompt)
-        
-        return response.text
+        if hasattr(response, 'content'):
+            return response.content
+        else:
+            return "Error: No content in response"
     except Exception as e:
-        return f"Error connecting to Gemini API: {e}"
-    
+        return f"Error connecting to Groq API: {e}"
+ 
+ 
+ 
+import json
+
 @app.route('/getonly', methods=['GET'])
 @validate_token_middleware()
 def get_recommendations():
     user_id = request.user_id  # Extract user ID from the token
+    
     try:
-        user_documents = topics_collection.find({"student": ObjectId(user_id)})
-        user_list = list(user_documents)
+        # Fetch user statistics from Redis
+        statistics = redis_client.hget(f"student:{user_id}", "statistics")
+        
+        if not statistics:
+            return jsonify({"message": "No statistics found for the provided user."}), 404
+        
+        # Convert JSON string to Python dictionary
+        topics_data = json.loads(statistics)
 
-        topics = [doc.get("topic") for doc in user_list if "topic" in doc]
-
-        if not topics:
+        if not topics_data:
             return jsonify({"message": "No topics found for the provided user."}), 404
 
-        prompt = f"Act as a recommendation generator , generate and recommend content for the following topics , also give five urls of YouTube videos regarding the topic .If there are multiple topics give overview of each of them and links for each topic video as well. The topics are: {', '.join(topics)}"
-        recommendations = llama_generate_recommendations(prompt)
+        # Extract only topic names
+        topics_list = list(topics_data.keys())
+
+        # Format recommendations prompt
+        prompt = f"""
+        Act as an intelligent recommendation generator. Based on the topics provided, generate a structured JSON response 
+        with an overview, recommendations, and five YouTube video URLs for each topic. Ensure the output is in strict JSON 
+        format without markdown or extra formatting. Use the following JSON structure:
+        {{
+            "topics": {{
+                "<topic_name>": {{
+                    "overview": "<brief overview>",
+                    "recommendations": "<recommended steps to learn>",
+                    "youtube_links": [
+                        "<video_link_1>",
+                        "<video_link_2>",
+                        "<video_link_3>",
+                        "<video_link_4>",
+                        "<video_link_5>"
+                    ]
+                }}
+            }}
+        }}
+
+        The topics are: {', '.join(topics_list)}
+        """
+
+        # Generate recommendations
+        recommendations_raw = llama_generate_recommendations(prompt)
+
+        # Ensure the response is valid JSON
+        try:
+            recommendations = json.loads(recommendations_raw)
+        except json.JSONDecodeError:
+            return jsonify({"message": "Failed to parse AI response as JSON", "raw_response": recommendations_raw}), 500
 
         return jsonify({
             "message": "Recommendations generated successfully",
-            "recommendations": recommendations
+            "recommendations": recommendations["topics"]  # Extract only relevant content
         }), 200
 
     except Exception as e:
@@ -281,42 +315,44 @@ def get_recommendations():
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
 
-
-import os
-import chromadb
-from flask import Flask, request, jsonify
-from PyPDF2 import PdfReader
+import faiss 
 from sentence_transformers import SentenceTransformer
-import google.generativeai as genai
-from dotenv import load_dotenv
-from langchain.document_loaders import PyPDFLoader
-from pptx import Presentation
+from huggingface_hub import login
+groq_api_key = os.getenv("GROQ_API_KEY")
+groq_model_name = "llama3-8b-8192"
+login(token=os.getenv("HUGGINGFACE_TOKEN")) 
 
-from flask import Flask, request, jsonify
-from sentence_transformers import SentenceTransformer
-import chromadb
-import google.generativeai as genai
-import os
-from PyPDF2 import PdfReader
-from pptx import Presentation
-import re
-import pyttsx3
-from threading import Thread
-import html
-from bs4 import BeautifulSoup
+groq_chat = ChatGroq(
+    groq_api_key=groq_api_key,
+    model_name=groq_model_name,
+)
 
 
-# Initialize components
+# Define the Groq system prompt
+groq_sys_prompt = ChatPromptTemplate.from_template(
+    "You are very smart at everything, you always give the best, the most accurate and most precise answers. "
+    "Answer the following questions: {user_prompt}. Add more information as per your knowledge so that user can get proper knowledge, but make sure information is correct"
+)
+import threading
+import time
+
+
+embedding_model = SentenceTransformer('multi-qa-mpnet-base-cos-v1')  # Pre-trained model for embeddings
+dimension = embedding_model.get_sentence_embedding_dimension()
+faiss_index = faiss.IndexFlatL2(dimension) 
+metadata_store = {}
+pdf_storage = {}
+
+def store_in_faiss(filename, text):
+    chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]
+    embeddings = embedding_model.encode(chunks)
+    faiss_index.add(embeddings)  
+    metadata_store.update({i: filename for i in range(len(metadata_store), len(metadata_store) + len(chunks))})
 genai.configure(api_key=os.getenv("GENAI_API_KEY"))
 model = SentenceTransformer("all-MiniLM-L6-v2")
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
 collection = chroma_client.get_or_create_collection(name="pdf_documents")
 
-# Initialize text-to-speech engine
-
-
-
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -334,7 +370,7 @@ class TextToSpeechManager:
                     engine.setProperty('volume', 1.0)
                     engine.say(text)
                     engine.runAndWait() 
-                    print("spoke")
+                    # print("spoke")
                     engine.startLoop(False)  # Start the event loop without blocking
                     engine.iterate()  # Process queued commands
                     engine.endLoop()  # End the event loop
@@ -479,7 +515,7 @@ def query_file():
         }), 500
 
 
-# Configure text-to-speech settings (optional)
+# # Configure text-to-speech settings (optional)
 # @app.route("/configure-voice", methods=["POST"])
 # def configure_voice():
 #     try:
@@ -502,10 +538,30 @@ def query_file():
 #     except Exception as e:
 #         return jsonify({"error": f"Error configuring voice: {str(e)}"}), 500
 
-
-
-
-# MindMap
+# Configure text-to-speech settings (optional)
+# @app.route("/configure-voice", methods=["POST"])
+# def configure_voice():
+#     try:
+#         data = request.get_json()
+#         rate = data.get("rate", 110)  # Default speaking rate
+#         volume = data.get("volume", 1.0)  # Default volume
+#         voice_id = data.get("voice_id")  # Voice identifier
+        
+#         engine.setProperty('rate', rate)
+#         engine.setProperty('volume', volume)
+        
+#         if voice_id:
+#             voices = engine.getProperty('voices')
+#             for voice in voices:
+#                 if voice.id == voice_id:
+#                     engine.setProperty('voice', voice.id)
+#                     break
+        
+#         return jsonify({"message": "Voice settings updated successfully"}), 200
+#     except Exception as e:
+#         return jsonify({"error": f"Error configuring voice: {str(e)}"}), 500
+#         return jsonify({"error": f"Error configuring voice: {str(e)}"}), 500
+# # MindMap
 
 def fetch_youtube_transcript(video_url):
     try:
@@ -518,7 +574,7 @@ def fetch_youtube_transcript(video_url):
 def generate_mind_map(content):
     prompt = f"""
     Extract key concepts from the following text and structure them into a JSON-based mind map.
-    Organize it into: "Topic" -> "Subtopics" -> "Details".Explain everything in points, 
+    Organize it into: "Topic" -> "Subtopics" -> "Details".
 
     Text: {content}
 
@@ -554,7 +610,7 @@ def generate_mind_map(content):
 
 @app.route("/generate_mind_map", methods=['GET'])
 def generate_mind_map_endpoint():
-    print("✅ Endpoint called!")  # Debugging
+    # print("✅ Endpoint called!")  # Debugging
     video_url = request.args.get('video_url')
 
     if not video_url:
@@ -568,12 +624,10 @@ def generate_mind_map_endpoint():
    
     return jsonify(mind_map)
 
-
-api_key = "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"  # Replace with your Groq API Key
 llm = ChatGroq(
     model="llama-3.3-70b-specdec",
     temperature=0,
-    groq_api_key=api_key
+    groq_api_key=os.getenv("GROQ_API_KEY"),
 )
 
 def generate_quiz(topic: str, num_questions: int, difficulty: str):
@@ -603,14 +657,15 @@ def generate_quiz(topic: str, num_questions: int, difficulty: str):
 def quiz_endpoint():
     data = request.json
     topic = data.get("topic")
-    num_questions = data.get("num_questions", 5)
-    difficulty = data.get("difficulty", "medium").lower()
+    num_questions = data.get("num_questions")
+    difficulty = data.get("difficulty")
     
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
     
     try:
         response_content = generate_quiz(topic, num_questions, difficulty)
+
         
         try:
             result = json.loads(response_content)
@@ -630,6 +685,34 @@ def quiz_endpoint():
 
 
 
+llm = ChatGroq(
+    model="llama-3.3-70b-specdec",
+    temperature=0,
+    groq_api_key=os.getenv("GROQ_API_KEY")
+)
+
+def generate_quiz(topic: str, num_questions: int, difficulty: str):
+    """Generate a quiz based on the given topic."""
+    prompt = f"""
+    Create a quiz on the topic: "{topic}". Generate {num_questions} multiple-choice questions.
+    The questions should be of {difficulty} difficulty.
+    Format the output strictly in JSON format as follows:
+    
+    {{
+       
+        "questions": {{
+            "{difficulty}": [
+                {{
+                    "question": "What is ...?",
+                    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+                    "answer": "Option 1"
+                }}
+            ]
+        }}
+    }}
+    """
+    response = llm.invoke(prompt)
+    return response.content if hasattr(response, 'content') else response.text
 
 
 @app.route('/', methods=['GET'])
@@ -638,3 +721,4 @@ def health():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
+    
