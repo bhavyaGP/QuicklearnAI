@@ -427,8 +427,8 @@ const QuizGenerator = () => {
               {isModelDropdownOpen && (
                 <div className="absolute w-full mt-1 bg-black/90 border border-white/10 rounded-xl overflow-hidden z-10">
                   {[
-                    'ChatGroq (Short Videos and Faster Response)',
-                    'Gemini (Long Videos and Slower Response)'
+                    'chatgroq',
+                    'gemini'
                   ].map((model) => (
                     <button
                       key={model}
