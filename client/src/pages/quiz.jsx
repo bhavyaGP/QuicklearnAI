@@ -261,6 +261,21 @@ const QuizGenerator = () => {
               )}
             </button>
           </div>
+
+          <div className="mt-8">
+            <Button
+              onClick={() => navigate('/youtube-chat', { 
+                state: { 
+                  youtubeUrl: youtubeLink,
+                  model: selectedModel,
+                  title: quizTitle
+                } 
+              })}
+              className="mt-6 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20"
+            >
+              Solve Doubt
+            </Button>
+          </div>
         </div>
       </div>
     );

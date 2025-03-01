@@ -26,6 +26,7 @@ import QuizResults from './pages/QuizResults'
 import StudentResults from './pages/StudentResults'
 import StudentLobby from './pages/StudentLobby'
 import PrivateRoute from './components/PrivateRoute'
+import YouTubeChat from './pages/YouTubeChat'
 
 function Home() {
   const contentRef = useRef()
@@ -153,6 +154,7 @@ function App() {
           <Route path="/quiz-results" element={<QuizResults />} />
           <Route path="/student-results" element={<StudentResults />} />
           <Route path="/student-lobby/:roomId" element={<StudentLobby />} />
+          <Route path="/youtube-chat" element={<YouTubeChat />} />
         </Routes>
 
         {showLoginModal && (
