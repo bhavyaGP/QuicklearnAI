@@ -477,3 +477,25 @@ export const quizRoomService = {
     }
   }
 };
+
+export const youtubeChatService = {
+  askQuestion: async (link, model, question) => {
+    try {
+      const response = await api.post('/chat_trans', {
+        link,
+        model,
+        question
+      });
+      
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw new Error(error.response.data.error || 'Failed to get answer');
+      } else if (error.request) {
+        throw new Error('No response from server');
+      } else {
+        throw new Error('Error setting up request');
+      }
+    }
+  }
+};
