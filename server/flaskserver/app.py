@@ -59,11 +59,10 @@ CORS(app, resources={
 
 formatter = TextFormatter()
 
-google_api_key = "AIzaSyCVFhQYpUkpcceDC5mTkbc0GzU9--sAkz4"
+google_api_key =os.getenv("GENAI_API_KEY")
 genai.configure(api_key=google_api_key)
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct model name
 
-# groq_api_key = "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"
 groq_model = ChatGroq(
     model="llama-3.3-70b-specdec",
     temperature=0,
@@ -102,7 +101,7 @@ def get_and_enhance_transcript(youtube_url, model_type='gemini'):
             response = groq_model.invoke(prompt)
             enhanced_transcript = response.content if hasattr(response, 'content') else str(response)
         else:  # Default to gemini
-            google_api_key = "AIzaSyCVFhQYpUkpcceDC5mTkbc0GzU9--sAkz4"
+            google_api_key = os.getenv("GENAI_API_KEY")
             genai.configure(api_key=google_api_key)
             gemini_model = genai.GenerativeModel('gemini-2.0-flash') 
             response = gemini_model.generate_content(prompt)

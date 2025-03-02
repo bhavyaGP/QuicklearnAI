@@ -22,7 +22,7 @@ const formatBotResponse = (text) => {
     // Clean up any markdown list markers
     .replace(/^\s*[-*]\s/gm, '→ ')
     // Remove any remaining special characters
-    .replace(/[\\"`]/g, '')
+    .replace(/[\\"`]/g, '') 
     // Clean up multiple newlines
     .replace(/\n{3,}/g, '\n\n');
 
@@ -93,6 +93,12 @@ const ChatMessage = ({ message }) => {
       </div>
     </div>
   );
+};
+
+const getYouTubeVideoId = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
 };
 
 const YouTubeChat = () => {
@@ -183,6 +189,15 @@ const YouTubeChat = () => {
               {youtubeUrl}
             </a>
           </div>
+          {youtubeUrl && (
+            <div className="mt-4">
+              <img
+                src={`https://img.youtube.com/vi/${getYouTubeVideoId(youtubeUrl)}/mqdefault.jpg`}
+                alt={videoTitle}
+                className="rounded-lg w-full max-w-xs mx-auto"
+              />
+            </div>
+          )}
           <div className="mt-4 text-gray-400">
             <p>Ask questions about this YouTube video. The AI will use the video transcript and context to provide answers.</p>
           </div>
