@@ -1,7 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const mongoUrl = process.env.mongoUrl;
-// const mongoUrl = "mongodb+srv://bgprajapati575:qted2HsFCkyfxWLv@cluster0.jvemj.mongodb.net/";
 
 mongoose.set('strictQuery', true);
 
