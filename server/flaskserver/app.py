@@ -168,7 +168,7 @@ def generate_summary_and_quiz(transcript, num_questions, language, difficulty, m
                 return json.loads(json_str)
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}, Raw response: {response_content}")
-                return None
+                return None 
         else:
             print(f"No valid JSON found in response: {response_content}")
             return None
