@@ -247,11 +247,27 @@ def chat_with_transcript():
         if not youtube_link:
             return jsonify({'error': 'Missing YouTube link'}), 400
 
-        # Get and enhance transcript
-        transcript, language = get_and_enhance_transcript(youtube_link, model_type)
+        # Check if transcript is already in Redis
+        transcript_key = f"transcript:{youtube_link}"
+        cached_transcript = redis_client.hgetall(transcript_key)
         
-        if "Error" in transcript:
-            return jsonify({'error': transcript}), 400
+        if cached_transcript and 'transcript' in cached_transcript and 'language' in cached_transcript:
+            transcript = cached_transcript['transcript']
+            language = cached_transcript['language']
+        else:
+            # Get and enhance transcript
+            transcript, language = get_and_enhance_transcript(youtube_link, model_type)
+            
+            if "Error" in transcript:
+                return jsonify({'error': transcript}), 400
+                
+            # Store transcript in Redis
+            redis_client.hset(transcript_key, mapping={
+                'transcript': transcript,
+                'language': language
+            })
+            # Set expiration (e.g., 24 hours)
+            redis_client.expire(transcript_key, 86400)
 
         # If no question provided, just return the transcript
         if not question:
