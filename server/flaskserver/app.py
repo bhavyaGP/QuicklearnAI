@@ -59,11 +59,10 @@ CORS(app, resources={
 
 formatter = TextFormatter()
 
-google_api_key = "AIzaSyCVFhQYpUkpcceDC5mTkbc0GzU9--sAkz4"
+google_api_key =os.getenv("GENAI_API_KEY")
 genai.configure(api_key=google_api_key)
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct model name
 
-# groq_api_key = "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"
 groq_model = ChatGroq(
     model="llama-3.3-70b-specdec",
     temperature=0,
@@ -102,7 +101,7 @@ def get_and_enhance_transcript(youtube_url, model_type='gemini'):
             response = groq_model.invoke(prompt)
             enhanced_transcript = response.content if hasattr(response, 'content') else str(response)
         else:  # Default to gemini
-            google_api_key = "AIzaSyCVFhQYpUkpcceDC5mTkbc0GzU9--sAkz4"
+            google_api_key = os.getenv("GENAI_API_KEY")
             genai.configure(api_key=google_api_key)
             gemini_model = genai.GenerativeModel('gemini-2.0-flash') 
             response = gemini_model.generate_content(prompt)
@@ -169,7 +168,7 @@ def generate_summary_and_quiz(transcript, num_questions, language, difficulty, m
                 return json.loads(json_str)
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}, Raw response: {response_content}")
-                return None
+                return None 
         else:
             print(f"No valid JSON found in response: {response_content}")
             return None
@@ -248,11 +247,27 @@ def chat_with_transcript():
         if not youtube_link:
             return jsonify({'error': 'Missing YouTube link'}), 400
 
-        # Get and enhance transcript
-        transcript, language = get_and_enhance_transcript(youtube_link, model_type)
+        # Check if transcript is already in Redis
+        transcript_key = f"transcript:{youtube_link}"
+        cached_transcript = redis_client.hgetall(transcript_key)
         
-        if "Error" in transcript:
-            return jsonify({'error': transcript}), 400
+        if cached_transcript and 'transcript' in cached_transcript and 'language' in cached_transcript:
+            transcript = cached_transcript['transcript']
+            language = cached_transcript['language']
+        else:
+            # Get and enhance transcript
+            transcript, language = get_and_enhance_transcript(youtube_link, model_type)
+            
+            if "Error" in transcript:
+                return jsonify({'error': transcript}), 400
+                
+            # Store transcript in Redis
+            redis_client.hset(transcript_key, mapping={
+                'transcript': transcript,
+                'language': language
+            })
+            # Set expiration (e.g., 24 hours)
+            redis_client.expire(transcript_key, 86400)
 
         # If no question provided, just return the transcript
         if not question:

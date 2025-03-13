@@ -109,6 +109,7 @@ io.on("connection", (socket) => {
             if (!quizRooms.has(roomId)) {
                 quizRooms.set(roomId, {
                     teacher: null,
+                    teacherName: null,
                     students: [],
                     scores: {},
                     socketIds: {},
@@ -118,30 +119,34 @@ io.on("connection", (socket) => {
 
             const room = quizRooms.get(roomId);
             
+            // Join the room regardless of role
+            socket.join(roomId);
+            room.socketIds[userId] = socket.id;
+            
             // Handle teacher join
             if (role === "teacher") {
                 room.teacher = userId;
-                room.socketIds[userId] = socket.id;
             } 
             // Handle student join
             else if (role === "student") {
-                socket.join(roomId);
-                
                 // Add student if not already in the room
                 if (!room.students.includes(userId)) {
                     room.students.push(userId);
                     room.scores[userId] = 0;
                 }
-                room.socketIds[userId] = socket.id;
             }
 
             // Get user info from Redis
             redis.get(`user:${userId}`).then(userInfo => {
                 const user = userInfo ? JSON.parse(userInfo) : null;
                 
-                // Store student name
-                if (role === 'student' && user?.username) {
-                    room.studentNames[userId] = user.username;
+                if (user?.username) {
+                    // Store name based on role
+                    if (role === 'student') {
+                        room.studentNames[userId] = user.username;
+                    } else if (role === 'teacher') {
+                        room.teacherName = user.username;
+                    }
                 }
                 
                 // Emit updated room data to all clients in the room
@@ -151,7 +156,20 @@ io.on("connection", (socket) => {
                         name: room.studentNames[studentId] || `Student ${studentId.slice(-4)}`,
                         score: room.scores[studentId]
                     })),
-                    teacher: room.teacher
+                    teacher: room.teacher,
+                    teacherName: room.teacherName || `Teacher ${room.teacher?.slice(-4)}`
+                });
+            }).catch(err => {
+                console.error("Error fetching user data from Redis:", err);
+                // Still emit room update with fallback names
+                io.to(roomId).emit('room_update', {
+                    students: room.students.map(studentId => ({
+                        id: studentId,
+                        name: room.studentNames[studentId] || `Student ${studentId.slice(-4)}`,
+                        score: room.scores[studentId]
+                    })),
+                    teacher: room.teacher,
+                    teacherName: room.teacherName || `Teacher ${room.teacher?.slice(-4)}`
                 });
             });
 
