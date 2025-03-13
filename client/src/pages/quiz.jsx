@@ -262,6 +262,7 @@ const QuizGenerator = () => {
             </button>
           </div>
 
+          {/* Doubt Solving Button */}
           <div className="mt-8">
             <Button
               onClick={() => navigate('/youtube-chat', { 
