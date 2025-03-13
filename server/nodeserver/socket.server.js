@@ -97,7 +97,7 @@ io.on("connection", (socket) => {
     });
 
     // Handle quiz-related events
-    socket.on("join_quiz_room", ({ roomId, userId, role }) => {
+    socket.on("join_quiz_room", ({ roomId, userId, role, studentName }) => {
         try {
             // Validate input parameters
             if (!roomId || !userId || !role) {
@@ -109,7 +109,6 @@ io.on("connection", (socket) => {
             if (!quizRooms.has(roomId)) {
                 quizRooms.set(roomId, {
                     teacher: null,
-                    teacherName: null,
                     students: [],
                     scores: {},
                     socketIds: {},
@@ -119,62 +118,40 @@ io.on("connection", (socket) => {
 
             const room = quizRooms.get(roomId);
             
-            // Join the room regardless of role
-            socket.join(roomId);
-            room.socketIds[userId] = socket.id;
-            
             // Handle teacher join
             if (role === "teacher") {
                 room.teacher = userId;
+                room.socketIds[userId] = socket.id;
             } 
             // Handle student join
             else if (role === "student") {
+                socket.join(roomId);
+                
                 // Add student if not already in the room
                 if (!room.students.includes(userId)) {
                     room.students.push(userId);
                     room.scores[userId] = 0;
                 }
+                room.socketIds[userId] = socket.id;
+                
+                // Store student name
+                if (studentName) {
+                    room.studentNames[userId] = studentName;
+                }
             }
 
-            // Get user info from Redis
-            redis.get(`user:${userId}`).then(userInfo => {
-                const user = userInfo ? JSON.parse(userInfo) : null;
-                
-                if (user?.username) {
-                    // Store name based on role
-                    if (role === 'student') {
-                        room.studentNames[userId] = user.username;
-                    } else if (role === 'teacher') {
-                        room.teacherName = user.username;
-                    }
-                }
-                
-                // Emit updated room data to all clients in the room
-                io.to(roomId).emit('room_update', {
-                    students: room.students.map(studentId => ({
-                        id: studentId,
-                        name: room.studentNames[studentId] || `Student ${studentId.slice(-4)}`,
-                        score: room.scores[studentId]
-                    })),
-                    teacher: room.teacher,
-                    teacherName: room.teacherName || `Teacher ${room.teacher?.slice(-4)}`
-                });
-            }).catch(err => {
-                console.error("Error fetching user data from Redis:", err);
-                // Still emit room update with fallback names
-                io.to(roomId).emit('room_update', {
-                    students: room.students.map(studentId => ({
-                        id: studentId,
-                        name: room.studentNames[studentId] || `Student ${studentId.slice(-4)}`,
-                        score: room.scores[studentId]
-                    })),
-                    teacher: room.teacher,
-                    teacherName: room.teacherName || `Teacher ${room.teacher?.slice(-4)}`
-                });
+            // Emit room update with student names
+            io.to(roomId).emit('room_update', {
+                students: room.students.map(studentId => ({
+                    id: studentId,
+                    name: room.studentNames[studentId] || `Student ${room.students.indexOf(studentId) + 1}`
+                })),
+                teacher: room.teacher,
+                teacherName: room.teacherName || 'Teacher'
             });
 
         } catch (error) {
-            console.error("Error joining quiz room:", error);
+            console.error("Error in join_quiz_room:", error);
             socket.emit("error", { message: "Failed to join quiz room" });
         }
     });

@@ -9,28 +9,34 @@ const StudentLobby = () => {
   const { roomId } = useParams();
   const [students, setStudents] = useState([]);
   const [hostName, setHostName] = useState('');
-  const userInfo = JSON.parse(localStorage.getItem('user-info'));
+  const userInfo = JSON.parse(localStorage.getItem('user-info') || '{}');
+  const studentName = localStorage.getItem('quiz-student-name') || '';
 
   useEffect(() => {
     if (!userInfo || !roomId) return;
 
-    // Join quiz room
+    // Make sure socket is connected
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    // Join quiz room with student name
     socket.emit('join_quiz_room', {
       roomId,
       userId: userInfo._id,
-      role: 'student'
+      role: 'student',
+      studentName: studentName // Add student name to payload
     });
 
     // Listen for room updates
-    socket.on('room_update', ({ students, teacher, teacherName }) => {
-      // Transform the students array to include index-based names
-      const studentsWithNumbers = students.map((studentId, index) => ({
-        id: studentId,
-        displayName: `Student ${index + 1}`
-      }));
-      setStudents(studentsWithNumbers);
-      if (teacherName) {
-        setHostName(teacherName);
+    socket.on('room_update', (data) => {
+      // Safely handle the data
+      if (data && Array.isArray(data.students)) {
+        setStudents(data.students);
+      }
+      
+      if (data && data.teacherName) {
+        setHostName(data.teacherName);
       }
     });
 
@@ -43,52 +49,66 @@ const StudentLobby = () => {
       socket.off('room_update');
       socket.off('quiz_questions');
     };
-  }, [roomId, userInfo]);
+  }, [roomId, userInfo, studentName, navigate]);
 
   return (
     <div className="min-h-screen bg-black text-white pt-24">
       <div className="max-w-4xl mx-auto p-8">
-        {/* Host Information */}
+        {/* Unique Code Display */}
         <Card className="bg-black/40 backdrop-blur-md border border-white/10 p-8 mb-8">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-semibold text-gray-400">HOSTED BY</h2>
-            <div className="text-3xl font-bold text-[#00FF9D]">
-              {hostName || 'Loading...'}
+            <h2 className="text-2xl font-semibold text-gray-400">QUIZ CODE</h2>
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-5xl font-bold text-[#00FF9D] tracking-wider">
+                {roomId}
+              </span>
             </div>
           </div>
         </Card>
 
-        {/* Participants List */}
-        <Card className="bg-black/40 backdrop-blur-md border border-white/10 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#00FF9D]" />
-              <h2 className="text-xl font-semibold">OTHER PARTICIPANTS</h2>
-            </div>
-            <span className="px-4 py-1 bg-[#00FF9D]/10 text-[#00FF9D] rounded-full text-sm">
-              {students.length} Students
-            </span>
+        {/* Students List */}
+        <Card className="bg-black/40 backdrop-blur-md border border-white/10 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Users className="w-6 h-6 text-[#00FF9D]" />
+            <h2 className="text-2xl font-semibold">Waiting Room</h2>
           </div>
-
-          <div className="space-y-4">
-            {students.map((student) => (
-              <div 
-                key={student.id}
-                className="p-4 rounded-lg border border-white/10 bg-black/20"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#00FF9D]/10 flex items-center justify-center text-[#00FF9D]">
-                    {student.displayName.split(' ')[1]}
-                  </div>
-                  <span className="text-gray-200">{student.displayName}</span>
+          
+          <div className="space-y-6">
+            {/* Host */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-400 mb-3">Host</h3>
+              <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                <div className="w-10 h-10 rounded-full bg-[#00FF9D]/20 flex items-center justify-center text-[#00FF9D] font-bold">
+                  {hostName ? hostName.charAt(0).toUpperCase() : 'T'}
                 </div>
+                <span>{hostName || 'Teacher'}</span>
               </div>
-            ))}
-            {students.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                Waiting for other students to join...
+            </div>
+            
+            {/* Students */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-400 mb-3">Students ({students.length})</h3>
+              <div className="space-y-2">
+                {students.length > 0 ? (
+                  students.map((student, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5">
+                      <div className="w-10 h-10 rounded-full bg-[#00FF9D]/20 flex items-center justify-center text-[#00FF9D] font-bold">
+                        {student.name ? student.name.charAt(0).toUpperCase() : `S${index + 1}`}
+                      </div>
+                      <span>{student.name || `Student ${index + 1}`}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-400 py-4">
+                    Waiting for students to join...
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          </div>
+          
+          <div className="mt-8 text-center text-gray-400">
+            <p>Waiting for the host to start the quiz...</p>
           </div>
         </Card>
       </div>
