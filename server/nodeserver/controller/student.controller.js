@@ -30,9 +30,9 @@ async function storestatics(req, res) {
         if (studentData) {
             const studentStatistics = JSON.parse(studentData);
             if (studentStatistics[topic]) {
-            studentStatistics[topic].push({ pasturl, score, totalscore });
+                studentStatistics[topic].push({ pasturl, score, totalscore });
             } else {
-            studentStatistics[topic] = [{ pasturl, score, totalscore }];
+                studentStatistics[topic] = [{ pasturl, score, totalscore }];
             }
             await redis.hset(`student:${userId}`, 'statistics', JSON.stringify(studentStatistics));
         } else {
@@ -151,55 +151,95 @@ function parseCategoryText(text) {
 }
 async function uploadFile(req, res) {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: "Please upload a file" });
-        }
+        const { type } = req.body;
+        if (type=='image') {
+            if (!req.file) {
+                return res.status(400).json({ error: "Please upload a file" });
+            }
+            
+            const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+            const { data: { text } } = await Tesseract.recognize(req.file.path, "eng");
 
-        const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-        const { data: { text } } = await Tesseract.recognize(req.file.path, "eng");
+            let category = await getCategoryFromGroq(text);
+            if (category !== "Other") {
+                category = parseCategoryText(category);
+            } else {
+                category = { Category: [{ Field: "Other", Subcategory: "Other" }] };
+            }
 
-        // let category = await getCategoryFromGemini(text);
-        let category = await getCategoryFromGroq(text);
-        if (category !== "Other") {
-            category = parseCategoryText(category);
-        } else {
-            category = { Category: [{ Field: "Other", Subcategory: "Other" }] };
-        }
+            const subject = category.Category[0].Field;
+            const subcategory = category.Category[0].Subcategory;
 
-        const subject = category.Category[0].Field;
-        const subcategory = category.Category[0].Subcategory;
+            const doubt = new Doubt({
+                student: req.userId,
+                imageId: uuidv4(),
+                name: req.file.originalname,
+                image: fileUrl,
+                topics: [subject, subcategory],
+                status: "pending"
+            });
 
-        // console.log("Find teacher for:", subject, subcategory);
-        // **Create a new Doubt record**
-        const doubt = new Doubt({
-            student: req.userId,
-            imageId: uuidv4(),
-            name: req.file.originalname,
-            image: fileUrl,
-            topics: [subject, subcategory],
-            status: "pending"
-        });
+            await doubt.save();
+            await redis.hset(`doubt:${doubt._id}`, 'extractedText', text);
 
-        await doubt.save();
+            res.status(200).json({
+                message: "File uploaded successfully",
+                doubtId: doubt._id,
+                file: {
+                    filename: req.file.filename,
+                    originalName: req.file.originalname,
+                    fileUrl: fileUrl,
+                    size: req.file.size,
+                    mimeType: req.file.mimetype,
+                    extractedText: text,
+                    topics: [subject, subcategory]
+                },
+                assignedTeacher: null
+            });
 
-        await redis.hset(`doubt:${doubt._id}`, 'extractedText', text);
-        res.status(200).json({
-            message: "File uploaded successfully",
-            doubtId: doubt._id,
-            file: {
-                filename: req.file.filename,
-                originalName: req.file.originalname,
-                fileUrl: fileUrl,
-                size: req.file.size,
-                mimeType: req.file.mimetype,
+        } else if (type === 'text') {
+            const { text } = req.body;
+            if (!text) {
+                return res.status(400).json({ error: "Please provide text" });
+            }
+
+            let category = await getCategoryFromGroq(text);
+            if (category !== "Other") {
+                category = parseCategoryText(category);
+            } else {
+                category = { Category: [{ Field: "Other", Subcategory: "Other" }] };
+            }
+
+            const subject = category.Category[0].Field;
+            const subcategory = category.Category[0].Subcategory;
+
+            const doubt = new Doubt({
+                student: req.userId,
+                imageId: uuidv4(),
+                name: "Text Doubt",
+                image: null,
+                topics: [subject, subcategory],
+                status: "pending"
+            });
+
+            await doubt.save();
+            await redis.hset(`doubt:${doubt._id}`, 'extractedText', text);
+
+            res.status(200).json({
+                message: "Text processed successfully",
+                doubtId: doubt._id,
+                file: null,
                 extractedText: text,
-                topics: [subject, subcategory]
-            },
-            assignedTeacher: null
-        });
+                topics: [subject, subcategory],
+                assignedTeacher: null
+            });
+
+        } else {
+            return res.status(400).json({ error: "Invalid type. Please provide a valid type (image or text)" });
+        }
 
     } catch (error) {
-        console.error("Error uploading image:", error);
+        console.error("Error processing request:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
