@@ -1,23 +1,34 @@
-const sgMail = require('@sendgrid/mail');
+const axios = require('axios');
+require('dotenv').config();
 
-const apiKey = process.env.SENDGRID_API_KEY;
-if (!apiKey) {
-    throw new Error("SENDGRID_API_KEY environment variable is not set");
-}
-sgMail.setApiKey(apiKey);
-const sendEmail = async ({to, subject, html}) => {
+const sendEmail = async ({ to, subject, html }) => {
+    const apikey = process.env.BROVO_API_KEY;
+    const url = 'https://api.brevo.com/v3/smtp/email';
+    const headers = {
+        'Content-Type': 'application/json',
+        'api-key': apikey,
+    };
+    const data = {
+        sender: {
+            email: 'iamquicklearn.ai@gmail.com',
+            name: 'QuickLearnAI',
+        },
+        to: [
+            {
+                email: to,
+            }
+        ],
+        subject: subject,
+        htmlContent: html
+    };
     try {
-        const msg = {
-            to,
-            from: process.env.SENDGRID_EMAIL,
-            subject,
-            html
-        }
+        const response = await axios.post(url, data, { headers });
+        console.log(response.data);
         
-        await sgMail.send(msg);
         console.log("Email sent successfully");
     } catch (error) {
         console.log("Error sending email:", error);
     }
 }
-module.exports = sendEmail
+
+module.exports = sendEmail;
