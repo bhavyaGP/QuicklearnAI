@@ -340,22 +340,22 @@ const QuizGenerator = () => {
   return (
     <div className="min-h-screen bg-black text-white pt-24">
       {loading && <LoadingAnimation />}
-      <div className="flex flex-col items-center px-4 py-8">
+      <div className="flex flex-col items-center px-4 py-4">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold mb-4 text-white">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold mb-2 text-white">
             Quick<span className="text-[#00FF9D]">Learn</span>AI
           </h1>
-          <p className="text-xl text-gray-400">
+          <p className="text-lg md:text-xl text-gray-400">
             AI Powered YouTube Quiz Generator
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Form Card */}
-          <div className="w-full bg-black/40 backdrop-blur-md rounded-2xl p-8 border border-white">
-            <h2 className="text-2xl font-semibold text-center mb-8 text-[#00FF9D]">
+          <div className="w-full bg-black/40 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white">
+            <h2 className="text-2xl font-semibold text-center mb-4 text-[#00FF9D]">
               Create Your Quiz
             </h2>
             
@@ -365,7 +365,7 @@ const QuizGenerator = () => {
               </div>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* YouTube Link Input */}
               <div className="space-y-2">
                 <label className="text-sm text-gray-400">

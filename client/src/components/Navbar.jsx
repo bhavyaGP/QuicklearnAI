@@ -35,17 +35,28 @@ function Navbar({ onSignUpClick, onLoginClick }) {
               <div className="w-8 h-8 rounded-full bg-[#00FF9D]/20 flex items-center justify-center">
                 <div className="w-6 h-6 rounded-full bg-[#00FF9D]" />
               </div>
-              <Link to="/" className="text-xl font-medium hover:text-[#00FF9D] transition-colors">
+              <Link to="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-[#00FF9D] hover:from-[#00FF9D] hover:to-white transition-all duration-500">
                 QuickLearnAI
               </Link>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              <Link to="/" className="text-l font-medium hover:text-[#00FF9D] transition-colors">Home</Link>
-              <Link to="/chatbot" className="text-l font-medium hover:text-[#00FF9D] transition-colors">ChatBot</Link>
-              <Link to="/quiz" className="text-l font-medium hover:text-[#00FF9D] transition-colors">Chat With QuickLearnAI</Link>
-              <Link to="/recommendations" className="text-l font-medium hover:text-[#00FF9D] transition-colors">Recommendations</Link>
-              <Link to="/doubt/create" className="text-l font-medium hover:text-[#00FF9D] transition-colors">Doubt</Link>
+              {[
+                { to: "/", label: "Home" },
+                { to: "/chatbot", label: "ChatBot" },
+                { to: "/quiz", label: "Chat With QuickLearnAI" },
+                { to: "/recommendations", label: "Recommendations" },
+                { to: "/doubt/create", label: "Doubt" }
+              ].map((link) => (
+                <Link 
+                  key={link.to} 
+                  to={link.to} 
+                  className="relative text-l font-medium text-white/90 hover:text-[#00FF9D] transition-colors duration-300 group"
+                >
+                  {link.label}
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[#00FF9D] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+                </Link>
+              ))}
             </div>
             
             <div className="flex items-center space-x-4">
@@ -73,10 +84,10 @@ function Navbar({ onSignUpClick, onLoginClick }) {
                     Logout
                   </button>
                   <Link to={userType === 'teacher' ? '/teacher-dashboard' : '/dashboard'}>
-                    <div className="transition-all duration-300 rounded-full hover:ring-2 hover:ring-[#00FF9D] hover:ring-offset-2 hover:ring-offset-black">
-                      <Avatar>
-                        <AvatarImage src={avatar} alt="Profile" />
-                        <AvatarFallback className="bg-gray-600">
+                    <div className="transform hover:scale-110 transition-all duration-300">
+                      <Avatar className="ring-2 ring-[#00FF9D]/30 hover:ring-[#00FF9D] ring-offset-2 ring-offset-black/50 transition-all duration-300">
+                        <AvatarImage src={avatar} alt="Profile" className="hover:brightness-110" />
+                        <AvatarFallback className="bg-gradient-to-br from-gray-600 to-gray-700">
                           {userType === 'teacher' ? 'T' : 'S'}
                         </AvatarFallback>
                       </Avatar>
