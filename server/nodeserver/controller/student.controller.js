@@ -10,14 +10,36 @@ const Teacher = require('../models/teacher.model');
 const Doubt = require('../models/doubt.model');
 const redis = require('../redis.connection');
 const { ChatGroq } = require("@langchain/groq");
+const ejs = require('ejs');
+const sendEmail = require('../utils/mailer');
+
 async function storestatics(req, res) {
     try {
         const userId = req.userId;
-        const { pasturl, score, totalscore, topic } = req.body;
+        const { pasturl, score, totalscore, topic, mail, questions } = req.body;
 
         if (!pasturl || score === undefined || totalscore === undefined || !topic) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
+
+        if (mail && questions) {
+            // Render the EJS template
+            const templatePath = path.join(__dirname, '../template/statistics.ejs');
+            const emailBody = await ejs.renderFile(templatePath, {
+                score,
+                totalscore,
+                topic,
+                questions
+            });
+
+            // Send email
+            await sendEmail({
+                to: mail,
+                subject: 'Your Quiz Statistics',
+                html: emailBody
+            });
+        }
+
         const newStatistic = new Statistic({
             pasturl,
             score,
@@ -25,7 +47,8 @@ async function storestatics(req, res) {
             topic,
             student: userId
         });
-        //store in redis in formate {studentId:{topic:[topics}}}
+
+        // Store in Redis in format {studentId:{topic:[topics]}}
         const studentData = await redis.hget(`student:${userId}`, 'statistics');
         if (studentData) {
             const studentStatistics = JSON.parse(studentData);
@@ -48,6 +71,7 @@ async function storestatics(req, res) {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+
 async function getstatistics(req, res) {
     try {
         const userId = req.userId;
@@ -152,11 +176,11 @@ function parseCategoryText(text) {
 async function uploadFile(req, res) {
     try {
         const { type } = req.body;
-        if (type=='image') {
+        if (type == 'image') {
             if (!req.file) {
                 return res.status(400).json({ error: "Please upload a file" });
             }
-            
+
             const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
             const { data: { text } } = await Tesseract.recognize(req.file.path, "eng");
 
