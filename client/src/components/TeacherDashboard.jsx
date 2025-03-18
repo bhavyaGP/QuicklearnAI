@@ -6,6 +6,7 @@ import socket from '../utils/socket.js';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Star, Award, Trophy, ThumbsUp, Plus } from 'lucide-react';
+import { doubtService } from '../services/api';
 
 const RatingDisplay = ({ rating }) => {
   const getEmoji = (rating) => {
@@ -103,6 +104,31 @@ const TeacherDashboard = () => {
     navigate(`/doubt/${doubtId}/chat`);
   };
 
+  const handleMarkResolved = async (doubtId) => {
+    try {
+      await doubtService.markDoubtAsResolved(doubtId);
+      
+      // Update the local state to move the doubt from newDoubts to solvedDoubts
+      setNewDoubts(prevDoubts => {
+        const resolvedDoubt = prevDoubts.find(d => d._id === doubtId);
+        const updatedDoubts = prevDoubts.filter(d => d._id !== doubtId);
+        
+        if (resolvedDoubt) {
+          setSolvedDoubts(prev => [...prev, { ...resolvedDoubt, status: 'resolved' }]);
+        }
+        
+        return updatedDoubts;
+      });
+
+      // Show success message (if you have a toast notification system)
+      // toast.success('Doubt marked as resolved');
+    } catch (error) {
+      console.error('Error marking doubt as resolved:', error);
+      // Show error message
+      // toast.error(error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-8 mt-24">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -145,12 +171,20 @@ const TeacherDashboard = () => {
                   <span className="text-gray-300">{doubt.name}</span>
                   <p className="text-sm text-gray-500">{doubt.topics.join(' › ')}</p>
                 </div>
-                <Button 
-                  onClick={() => handleJoinChat(doubt._id)}
-                  className="px-4 py-2 bg-[#00FF9D]/10 text-l font-medium rounded-full border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20"
-                >
-                  Join Chat →
-                </Button>
+                <div>
+                  <Button 
+                    onClick={() => handleJoinChat(doubt._id)}
+                    className="px-4 py-2 bg-[#00FF9D]/10 text-l font-medium rounded-full border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20"
+                  >
+                    Join Chat →
+                  </Button>
+                  <Button 
+                    onClick={() => handleMarkResolved(doubt._id)}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    Mark as Resolved
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
