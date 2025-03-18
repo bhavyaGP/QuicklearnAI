@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import socket from '../utils/socket';
 import { motion } from "framer-motion";
+import NameInputModal from '../components/NameInputDialog';
 
 const QuizGenerator = () => {
   const { toast } = useToast();
@@ -262,6 +263,7 @@ const QuizGenerator = () => {
             </button>
           </div>
 
+          {/* Doubt Solving Button */}
           <div className="mt-8">
             <Button
               onClick={() => navigate('/youtube-chat', { 
@@ -523,6 +525,7 @@ const QuizJoinSection = () => {
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
   const navigate = useNavigate();
   const userInfo = JSON.parse(localStorage.getItem('user-info'));
 
@@ -542,7 +545,7 @@ const QuizJoinSection = () => {
     socket.on('room_verified', ({ exists }) => {
       setIsVerifying(false);
       if (exists) {
-        navigate(`/student-lobby/${joinCode}`);
+        setShowNameDialog(true); // Show name dialog instead of navigating directly
       } else {
         setError('Invalid quiz code or quiz has expired');
       }
@@ -588,20 +591,11 @@ const QuizJoinSection = () => {
       setError('');
       setIsVerifying(true);
 
-      // Add timeout to prevent infinite verification
-      const timeout = setTimeout(() => {
-        setIsVerifying(false);
-        setError('Verification timeout. Please try again.');
-      }, 10000); // 10 seconds timeout
-
       // Emit verify_room event
       socket.emit('verify_room', {
         roomId: joinCode,
         userId: userInfo._id,
         role: 'student'
-      }, () => {
-        // Clear timeout when acknowledgment is received
-        clearTimeout(timeout);
       });
 
     } catch (error) {
@@ -609,6 +603,13 @@ const QuizJoinSection = () => {
       setError('Failed to join quiz');
       console.error('Quiz join error:', error);
     }
+  };
+
+  const handleNameSubmit = (studentName) => {
+    // Store name in localStorage for persistence during quiz
+    localStorage.setItem('quiz-student-name', studentName);
+    // Navigate to lobby with the name
+    navigate(`/student-lobby/${joinCode}`);
   };
 
   return (
@@ -639,6 +640,12 @@ const QuizJoinSection = () => {
           )}
         </Button>
       </div>
+
+      <NameInputModal 
+        open={showNameDialog}
+        onSubmit={handleNameSubmit}
+        onClose={() => setShowNameDialog(false)}
+      />
     </Card>
   );
 };

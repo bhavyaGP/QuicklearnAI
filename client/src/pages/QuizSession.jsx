@@ -17,6 +17,7 @@ const QuizSession = () => {
   const userInfo = JSON.parse(localStorage.getItem('user-info'));
   const isTeacher = userInfo?.role === 'teacher';
   const [showResults, setShowResults] = useState(false);
+  const studentName = localStorage.getItem('quiz-student-name');
 
   useEffect(() => {
     console.log("userInfo", userInfo);
@@ -94,6 +95,14 @@ const QuizSession = () => {
       }
     });
 
+    // Add student name to any socket emissions
+    socket.emit('join_session', {
+      roomId,
+      userId: userInfo._id,
+      role: userInfo.role,
+      studentName: studentName
+    });
+
     return () => {
       socket.off('connect');
       socket.off('connect_error');
@@ -101,7 +110,7 @@ const QuizSession = () => {
       socket.off('update_scores');
       socket.off('final_scores');
     };
-  }, [roomId, userInfo, location.state]);
+  }, [roomId, userInfo, location.state, studentName]);
 
   useEffect(() => {
     console.log("questionsList updated:", questionsList);
@@ -114,6 +123,7 @@ const QuizSession = () => {
     socket.emit('submit_answer', {
       roomId,
       userId: userInfo._id,
+      studentName: studentName,
       question: {
         ...questionsList[currentQuestion],
         totalQuestions: questionsList.length,
