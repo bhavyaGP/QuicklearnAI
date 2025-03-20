@@ -1,19 +1,21 @@
 const Doubt = require('../models/doubt.model');
 const redis = require('../redis.connection');
 const io = require('../socket.server');
+const Together = require('together-ai');
+const together = new Together();
 async function matchdoubt(req, res) {
 
     try {
         const { doubtId } = req.params;
         const doubt = await Doubt.findById(doubtId);
-if (!doubt) return res.status(404).json({ error: "Doubt not found" });
+        if (!doubt) return res.status(404).json({ error: "Doubt not found" });
 
         const subject = doubt.topics[0];
         const subcategory = doubt.topics[1];
 
         const teacherKeys = await redis.keys('teacher:*');
         let matchedTeachers = [];
-        
+
         for (const key of teacherKeys) {
             const teacher = await redis.hgetall(key);
             if (teacher.field === subject && teacher.subcategory === subcategory) {
@@ -42,7 +44,7 @@ if (!doubt) return res.status(404).json({ error: "Doubt not found" });
                         doubtsSolved: parseInt(teacher.doubtsSolved),
                         field: teacher.field,
                         subcategory: teacher.subcategory,
-                       });
+                    });
                 }
             }
         }
@@ -146,7 +148,7 @@ async function getTeacherDoubts(req, res) {
 
 }
 
-async function setsolveddoubt(req,res){
+async function setsolveddoubt(req, res) {
     try {
         const { doubtId } = req.params;
         const doubt = await Doubt.findById(doubtId);
@@ -162,4 +164,42 @@ async function setsolveddoubt(req,res){
     }
 }
 
-module.exports = { matchdoubt, getPendingDoubts, getTeacherDoubts , setsolveddoubt};
+async function solvedbyai(req, res) {
+    try {
+        const { question } = req.body; 
+        if (!question) {
+            return res.status(400).json({ error: "Please provide a question" });
+        }
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders();
+        const stream = await together.chat.completions.create({
+            model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+            messages: [
+                { role: 'user', content: question },
+            ],
+            stream: true,
+        });
+        
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                res.write(`data: ${JSON.stringify({ content })}\n\n`);
+            }
+        }
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+    } catch (error) {
+        console.error("Error in AI solving doubt:", error);
+        if (res.headersSent) {
+            res.write(`data: ${JSON.stringify({ error: "An error occurred" })}\n\n`);
+            res.end();
+        } else {
+            res.status(500).json({ error: "Internal server error" });
+        }
+    }
+}
+
+module.exports = { matchdoubt, getPendingDoubts, getTeacherDoubts, setsolveddoubt, solvedbyai };
