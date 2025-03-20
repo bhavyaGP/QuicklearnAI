@@ -3,7 +3,7 @@ const router = express.Router();
 
 
 
-const { matchdoubt, getPendingDoubts, getTeacherDoubts, setsolveddoubt } = require("../controller/doubt.controller");
+const { matchdoubt, getPendingDoubts, getTeacherDoubts, setsolveddoubt ,solvedbyai} = require("../controller/doubt.controller");
 
 router.post("/match/:doubtId", matchdoubt);
 
@@ -21,6 +21,7 @@ router.get("/teacher/:teacherId/doubts", getTeacherDoubts);
 //api for set status doubt to solved
 
 router.patch("/:doubtId/status", setsolveddoubt);
+router.post("/aisolve",solvedbyai)
 
 module.exports = router;
 
