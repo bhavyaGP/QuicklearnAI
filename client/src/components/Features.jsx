@@ -1,4 +1,4 @@
-import { BookOpen, Users, Brain, MessageSquare, Youtube, Robot } from 'lucide-react';
+import { BookOpen, Users, Brain, MessageSquare, Youtube } from 'lucide-react';
 
 const Features = () => {
   return (
@@ -74,7 +74,7 @@ const Features = () => {
           {/* AI Assistant Feature */}
           <div className="group p-8 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md hover:border-[#00FF9D]/30 transition-all duration-300">
             <div className="h-12 w-12 rounded-lg bg-[#00FF9D]/10 flex items-center justify-center mb-6">
-              <Robot className="h-6 w-6 text-[#00FF9D]" />
+              <Brain className="h-6 w-6 text-[#00FF9D]" />
             </div>
             <h3 className="text-xl font-semibold mb-4 text-white">24/7 AI Support</h3>
             <p className="text-gray-400">

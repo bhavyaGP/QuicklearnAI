@@ -69,6 +69,7 @@ export const summaryService = {
     }
   }
 };
+
 export const quizService = {
   generateQuiz: async (link, qno, difficulty, model) => {
     try {
@@ -524,6 +525,55 @@ export const doubtService = {
       } else {
         throw new Error('Error setting up request');
       }
+    }
+  }
+};
+
+export const paperService = {
+  uploadPaper: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post('http://localhost:3000/gen/paper_upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Paper upload error:', error);
+      throw error;
+    }
+  },
+
+  generatePaper: async (filePath, numQuestions, numPapers) => {
+    try {
+      const response = await axios.post('http://localhost:3000/gen/generate_paper', {
+        file_path: filePath,
+        num_questions: numQuestions,
+        num_papers: numPapers
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Paper generation error:', error);
+      throw error;
+    }
+  },
+
+  downloadPaper: async (paperUrl) => {
+    try {
+      const response = await axios.get(paperUrl, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Paper download error:', error);
+      throw error;
     }
   }
 };

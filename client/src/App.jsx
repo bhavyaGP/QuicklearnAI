@@ -27,6 +27,7 @@ import StudentResults from './pages/StudentResults'
 import StudentLobby from './pages/StudentLobby'
 import PrivateRoute from './components/PrivateRoute'
 import YouTubeChat from './pages/YouTubeChat'
+import QuestionPaperGenerator from './pages/QuestionPaperGenerator'
 
 function Home() {
   const contentRef = useRef()
@@ -155,6 +156,15 @@ function App() {
           <Route path="/student-results" element={<StudentResults />} />
           <Route path="/student-lobby/:roomId" element={<StudentLobby />} />
           <Route path="/youtube-chat" element={<YouTubeChat />} />
+          <Route 
+            path="/paper-generate" 
+            element={
+              <PrivateRoute 
+                element={<QuestionPaperGenerator />} 
+                allowedRoles={['teacher']} 
+              />
+            } 
+          />
         </Routes>
 
         {showLoginModal && (

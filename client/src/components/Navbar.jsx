@@ -7,6 +7,20 @@ function Navbar({ onSignUpClick, onLoginClick }) {
   const [userType, setUserType] = useState(null);
   const navigate = useNavigate();
 
+  const teacherLinks = [
+    { to: "/", label: "Home" },
+    { to: "/paper-generate", label: "Paper Generate" },
+    { to: "/create-quiz", label: "Create Quiz" }
+  ];
+
+  const studentLinks = [
+    { to: "/", label: "Home" },
+    { to: "/chatbot", label: "ChatBot" },
+    { to: "/quiz", label: "Chat With QuickLearnAI" },
+    { to: "/recommendations", label: "Recommendations" },
+    { to: "/doubt/create", label: "Doubt" }
+  ];
+
   useEffect(() => {
     // Check if user is logged in by looking for user-info in localStorage
     const userInfo = JSON.parse(localStorage.getItem('user-info'));
@@ -26,6 +40,9 @@ function Navbar({ onSignUpClick, onLoginClick }) {
 
   const avatar = localStorage.getItem('user-info') ? JSON.parse(localStorage.getItem('user-info')).avatar : 'https://github.com/shadcn.png';
 
+  // Determine which links to show
+  const navigationLinks = userType === 'teacher' ? teacherLinks : studentLinks;
+
   return (
     <nav className="fixed top-8 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,13 +58,7 @@ function Navbar({ onSignUpClick, onLoginClick }) {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
-              {[
-                { to: "/", label: "Home" },
-                { to: "/chatbot", label: "ChatBot" },
-                { to: "/quiz", label: "Chat With QuickLearnAI" },
-                { to: "/recommendations", label: "Recommendations" },
-                { to: "/doubt/create", label: "Doubt" }
-              ].map((link) => (
+              {navigationLinks.map((link) => (
                 <Link 
                   key={link.to} 
                   to={link.to} 
