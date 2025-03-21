@@ -4,6 +4,7 @@ import { userService } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import axios from 'axios';
 
 const DoubtCreation = () => {
   const [file, setFile] = useState(null);
@@ -15,6 +16,7 @@ const DoubtCreation = () => {
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
+    console.log('Selected file:', selectedFile); // Debug log
     if (selectedFile) {
       // Validate file type
       if (!selectedFile.type.startsWith('image/')) {
@@ -34,21 +36,31 @@ const DoubtCreation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (activeTab === 'image' && !file) {
-      setError('Please select an image');
-      return;
-    }
-    if (activeTab === 'text' && !text.trim()) {
-      setError('Please enter your doubt');
-      return;
-    }
-
     setLoading(true);
+
     try {
-      const data = activeTab === 'image' ? file : text;
-      const response = await userService.uploadDoubt(data, activeTab);
+      // Validate file exists and is of correct type
+      if (activeTab === 'image') {
+        if (!file) {
+          throw new Error('Please select a file');
+        }
+        
+        // Add file type validation if needed
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error('Please upload a valid image file (JPEG, PNG)');
+        }
+
+        // Debug log
+        console.log('File being submitted:', file);
+      }
+
+      const response = await userService.uploadDoubt(
+        activeTab === 'image' ? file : text,
+        activeTab
+      );
       
+      // Store extracted text if available
       if (activeTab === 'image') {
         if (response.file?.extractedText) {
           localStorage.setItem(
@@ -66,10 +78,39 @@ const DoubtCreation = () => {
       }
 
       if (response.doubtId) {
-        const matchResponse = await userService.matchDoubt(response.doubtId);
-        navigate(`/doubt/${response.doubtId}/matched`, {
-          state: { matchedData: matchResponse }
-        });
+        try {
+          // Try to match with a teacher first
+          const matchResponse = await userService.matchDoubt(response.doubtId);
+          
+          // Check if there are actually teachers available
+          const hasTeachers = matchResponse.onlineteacher && matchResponse.onlineteacher.length > 0;
+          
+          if (!hasTeachers || matchResponse.message === "No online teacher found, doubt remains pending.") {
+            // If no teacher is found, navigate to matched page
+            navigate(`/doubt/${response.doubtId}/matched`, {
+              state: { 
+                matchedData: {
+                  ...matchResponse,
+                  teachers: matchResponse.onlineteacher
+                },
+                isAiResponse: true
+              }
+            });
+          } else {
+            // If teachers are found, proceed with normal flow
+            navigate(`/doubt/${response.doubtId}/matched`, {
+              state: { 
+                matchedData: {
+                  ...matchResponse,
+                  teachers: matchResponse.onlineteacher
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error in matching:', error);
+          setError('Failed to process doubt. Please try again.');
+        }
       }
     } catch (error) {
       setError(error.message || 'Failed to create doubt');

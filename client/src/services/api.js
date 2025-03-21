@@ -256,81 +256,6 @@ export const documentService = {
 };
 
 export const userService = {
-  // uploadImage: async (imageFile) => {
-  //   try {
-  //     // Create form data
-  //     const formData = new FormData();
-  //     formData.append('image', imageFile);
-
-  //     // Get user token
-  //     const userInfo = localStorage.getItem('user-info');
-  //     if (!userInfo) {
-  //       throw new Error('User not authenticated');
-  //     }
-
-  //     const { token } = JSON.parse(userInfo);
-  //     if (!token) {
-  //       throw new Error('Authentication token not found');
-  //     }
-
-  //     // Make request using api2 instance (which points to localhost:3000)
-  //     const response = await api2.post('/user/user/upload', formData, {
-  //       headers: {
-  //         'Content-Type': 'multipart/form-data',
-  //         'Authorization': `Bearer ${token}`
-  //       },
-  //       withCredentials: true
-  //     });
-
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error('Upload image error:', error);
-  //     if (error.response) {
-  //       throw new Error(error.response.data.error || 'Failed to upload image');
-  //     } else if (error.request) {
-  //       throw new Error('No response from server');
-  //     } else {
-  //       throw new Error('Error setting up request');
-  //     }
-  //   }
-  // },
-
-  matchDoubt: async (doubtId) => {
-    try {
-      const userInfo = localStorage.getItem('user-info');
-      if (!userInfo) {
-        throw new Error('User not authenticated');
-      }
-
-      const { token } = JSON.parse(userInfo);
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await api2.post(`/user/doubt/match/${doubtId}`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        withCredentials: true
-      });
-      console.log(response);
-      return {
-        doubtId: response.data.doubtId,
-        assignedTeacher: response.data.assignedTeacher,
-        onlineteacher: response.data.onlineteacher
-      };
-    } catch (error) {
-      console.error('Match doubt error:', error);
-      if (error.response) {
-        throw new Error(error.response.data.error || 'Failed to match doubt');
-      } else if (error.request) {
-        throw new Error('No response from server');
-      } else {
-        throw new Error('Error setting up request');
-      }
-    }
-  },
-
   uploadDoubt: async (data, type) => {
     try {
       const userInfo = localStorage.getItem('user-info');
@@ -367,7 +292,43 @@ export const userService = {
       console.error('Upload error:', error);
       throw new Error(error.response?.data?.error || 'Failed to upload doubt');
     }
-  }
+  },
+
+  matchDoubt: async (doubtId) => {
+    try {
+      const userInfo = localStorage.getItem('user-info');
+      if (!userInfo) {
+        throw new Error('User not authenticated');
+      }
+
+      const { token } = JSON.parse(userInfo);
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await api2.post(`/user/doubt/match/${doubtId}`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+      console.log(response);
+      return {
+        doubtId: response.data.doubtId,
+        assignedTeacher: response.data.assignedTeacher,
+        onlineteacher: response.data.onlineteacher
+      };
+    } catch (error) {
+      console.error('Match doubt error:', error);
+      if (error.response) {
+        throw new Error(error.response.data.error || 'Failed to match doubt');
+      } else if (error.request) {
+        throw new Error('No response from server');
+      } else {
+        throw new Error('Error setting up request');
+      }
+    }
+  },
 };
 
 export const chatService = {

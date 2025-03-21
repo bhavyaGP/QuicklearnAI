@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import socket from '../utils/socket';
 import { chatService } from '../services/api';
+import { Bot, Send } from 'lucide-react';
+import ChatMessage from './ChatMessage';
 
 const ChatRoom = () => {
   const { doubtId } = useParams();
+  const location = useLocation();
+  const { isAiResponse, aiResponse } = location.state || {};
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [error, setError] = useState(null);
@@ -120,46 +124,46 @@ const ChatRoom = () => {
           </div>
         )}
 
-        <div className="bg-black/40 backdrop-blur-md rounded-xl border border-white/10 p-8">
-          {error && (
-            <div className="text-red-500 mb-4">{error}</div>
-          )}
-          
-          <div className="h-[60vh] overflow-y-auto mb-4">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`mb-4 ${msg.sender === userInfo._id ? 'text-right' : 'text-left'}`}
-              >
-                <div
-                  className={`inline-block p-3 rounded-lg ${
-                    msg.sender === userInfo._id
-                      ? 'bg-[#00FF9D]/10 text-[#00FF9D]'
-                      : 'bg-white/10'
-                  }`}
-                >
-                  {msg.message}
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* AI Response Section */}
+        {isAiResponse && aiResponse && (
+          <ChatMessage 
+            message={{
+              content: aiResponse,
+              isAI: true,
+              timestamp: new Date(),
+            }} 
+          />
+        )}
 
-          <form onSubmit={handleSendMessage} className="flex gap-4">
+        {/* Chat Messages Section */}
+        <div className="space-y-4 mb-8">
+          {messages.map((message, index) => (
+            <ChatMessage key={index} message={message} />
+          ))}
+        </div>
+
+        {/* Message Input */}
+        <form onSubmit={handleSendMessage} className="mt-4">
+          <div className="flex gap-4">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 bg-white/5 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#00FF9D]"
               placeholder="Type your message..."
+              className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 
+                focus:outline-none focus:border-[#00FF9D]/50 transition-colors"
             />
             <button
               type="submit"
-              className="px-6 py-2 bg-[#00FF9D] text-black rounded-lg hover:bg-[#00FF9D]/90"
+              className="px-6 py-3 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] 
+                font-medium rounded-xl hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 
+                transition-all duration-300 flex items-center gap-2"
             >
+              <Send className="w-5 h-5" />
               Send
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
