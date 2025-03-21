@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
 from threading import Thread
@@ -6,6 +6,9 @@ import pyttsx3
 import html
 from bs4 import BeautifulSoup
 from flask_cors import CORS 
+import fitz
+from fpdf import FPDF
+import random
 import re
 import json
 from langchain_community.llms import GPT4All  
@@ -59,10 +62,11 @@ CORS(app, resources={
 
 formatter = TextFormatter()
 
-google_api_key =os.getenv("GENAI_API_KEY")
+google_api_key = os.getenv("GENAI_API_KEY")
 genai.configure(api_key=google_api_key)
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct model name
 
+# groq_api_key = "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"
 groq_model = ChatGroq(
     model="llama-3.3-70b-specdec",
     temperature=0,
@@ -168,7 +172,7 @@ def generate_summary_and_quiz(transcript, num_questions, language, difficulty, m
                 return json.loads(json_str)
             except json.JSONDecodeError as e:
                 print(f"JSONDecodeError: {e}, Raw response: {response_content}")
-                return None 
+                return None
         else:
             print(f"No valid JSON found in response: {response_content}")
             return None
@@ -247,27 +251,11 @@ def chat_with_transcript():
         if not youtube_link:
             return jsonify({'error': 'Missing YouTube link'}), 400
 
-        # Check if transcript is already in Redis
-        transcript_key = f"transcript:{youtube_link}"
-        cached_transcript = redis_client.hgetall(transcript_key)
+        # Get and enhance transcript
+        transcript, language = get_and_enhance_transcript(youtube_link, model_type)
         
-        if cached_transcript and 'transcript' in cached_transcript and 'language' in cached_transcript:
-            transcript = cached_transcript['transcript']
-            language = cached_transcript['language']
-        else:
-            # Get and enhance transcript
-            transcript, language = get_and_enhance_transcript(youtube_link, model_type)
-            
-            if "Error" in transcript:
-                return jsonify({'error': transcript}), 400
-                
-            # Store transcript in Redis
-            redis_client.hset(transcript_key, mapping={
-                'transcript': transcript,
-                'language': language
-            })
-            # Set expiration (e.g., 24 hours)
-            redis_client.expire(transcript_key, 86400)
+        if "Error" in transcript:
+            return jsonify({'error': transcript}), 400
 
         # If no question provided, just return the transcript
         if not question:
@@ -790,6 +778,199 @@ def generate_quiz(topic: str, num_questions: int, difficulty: str):
     response = llm.invoke(prompt)
     return response.content if hasattr(response, 'content') else response.text
 
+
+
+UPLOAD_FOLDER = "uploads"
+OUTPUT_FOLDER = "generated_papers"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+groq_api_key = os.getenv("GROQ_API_KEY")
+
+def extract_questions_from_pdf(pdf_path):
+    """
+    Extract questions from a PDF file more robustly.
+    Handles various question formats and improves text extraction.
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        questions = []
+        current_question = ""
+        
+        for page in doc:
+            # Extract text with different methods for robustness
+            text = page.get_text("text")  # Primary method
+            if not text.strip():  # Fallback if text extraction fails
+                text = page.get_text("blocks")  # Extract by blocks if needed
+                text = "\n".join(block[4] for block in text if len(block) > 4)  # block[4] is the text content
+            
+            # Split text into lines and clean up
+            lines = [line.strip() for line in text.split('\n') if line.strip()]
+            
+            for line in lines:
+                # Check if line could be the start of a new question
+                is_new_question = False
+                # Pattern 1: Starts with number followed by dot or parenthesis (e.g., "1.", "1)")
+                if re.match(r'^\d+[.\)]\s', line):
+                    is_new_question = True
+                # Pattern 2: Contains a question mark and is long enough to be meaningful
+                elif '?' in line and len(line) > 10:
+                    is_new_question = True
+                
+                if is_new_question:
+                    # Save previous question if exists
+                    if current_question:
+                        questions.append(current_question.strip())
+                    current_question = line
+                elif current_question:  # Append to existing question (multi-line)
+                    current_question += " " + line
+            
+            # Append the last question on the page if exists
+            if current_question:
+                questions.append(current_question.strip())
+                current_question = ""  # Reset for next page
+        
+        # Final filtering of questions
+        filtered_questions = []
+        for q in questions:
+            # Ensure question is meaningful: has a question mark and sufficient length
+            if '?' in q and len(q) > 10:
+                # Clean up extra spaces and ensure proper encoding
+                cleaned_q = " ".join(q.split())
+                filtered_questions.append(cleaned_q)
+        
+        # If no questions found, try a more aggressive extraction as last resort
+        if not filtered_questions:
+            all_text = ""
+            for page in doc:
+                all_text += page.get_text("text") + "\n"
+            # Split by question marks and filter
+            potential_questions = [q.strip() for q in all_text.split('?') if q.strip()]
+            for pq in potential_questions:
+                if len(pq) > 10:
+                    cleaned_q = f"{pq}?".strip()  # Re-add question mark
+                    filtered_questions.append(cleaned_q)
+        
+        doc.close()
+        return filtered_questions if filtered_questions else ["No valid questions found in PDF"]
+
+    except Exception as e:
+        return [f"Error extracting questions: {str(e)}"]
+
+def generate_questions(extracted_questions, num_questions):
+    llm = ChatGroq(
+        model="llama-3.3-70b-specdec",
+        temperature=0.7,
+        groq_api_key=groq_api_key
+    )
+    
+    prompt = (
+        "Based on the following sample questions, generate similar academic questions that are clear, meaningful, "
+        "and properly formatted. Each question should end with a question mark and be suitable for an exam paper:\n\n"
+        f"Sample questions:\n{chr(10).join(extracted_questions[:5])}\n\n"
+        f"Generate {num_questions} new questions in a similar style and complexity level."
+    )
+    
+    response = llm.invoke(prompt)
+    generated_text = response.content
+    
+    new_questions = [q.strip() for q in generated_text.split('\n') if q.strip()]
+    valid_questions = []
+    for q in new_questions:
+        if q and q[0].isdigit() and '?' in q and len(q) > 15:
+            valid_questions.append(q)
+        elif q and '?' in q and len(q) > 15:
+            valid_questions.append(f"{len(valid_questions) + 1}. {q}")
+    
+    return valid_questions[:num_questions]
+
+def create_question_paper(questions, filename, set_number):
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    
+    # Set light blue background
+    pdf.set_fill_color(240, 248, 255)  # Light blue RGB
+    pdf.rect(0, 0, pdf.w, pdf.h, 'F')
+    
+    # Add heading
+    pdf.set_font("Arial", "B", 16)
+    pdf.set_text_color(0, 0, 0)  # Black text
+    pdf.cell(0, 10, f"Set Number - {set_number}", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Add questions with proper numbering
+    pdf.set_font("Arial", size=12)
+    for idx, question in enumerate(questions, 1):
+        q_text = question.split('.', 1)[1].strip() if '.' in question[:3] else question
+        safe_question = f"{idx}. {q_text}".encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 10, safe_question)
+        pdf.ln(5)
+    
+    # Add footer text at the bottom
+    pdf.set_y(-20)  # Position 20mm from bottom
+    pdf.set_font("Arial", "I", 8)
+    pdf.set_text_color(100, 100, 100)  # Gray text
+    pdf.cell(0, 10, "Powered by QuickLearn AI", ln=True, align='C')
+    
+    pdf.output(filename)
+
+@app.route('/paper_upload', methods=['POST'])
+def upload_pdf():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    file = request.files['file']
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(file_path)
+    return jsonify({"message": "File uploaded successfully", "file_path": file_path})
+
+@app.route('/generate_paper', methods=['POST'])
+def generate_papers():
+    data = request.json
+    pdf_path = data.get("file_path")
+    num_questions = data.get("num_questions", 10)
+    num_papers = data.get("num_papers", 1)
+    
+    if not pdf_path or not os.path.exists(pdf_path):
+        return jsonify({"error": "Invalid file path"}), 400
+    
+    try:
+        extracted_questions = extract_questions_from_pdf(pdf_path)
+        if not extracted_questions:
+            return jsonify({"error": "No valid questions found in PDF"}), 400
+        
+        generated_questions = generate_questions(extracted_questions, num_questions * num_papers)
+        all_questions = extracted_questions + generated_questions
+        random.shuffle(all_questions)
+        
+        pdf_paths = []
+        for i in range(num_papers):
+            start_idx = i * num_questions
+            end_idx = start_idx + num_questions
+            if start_idx >= len(all_questions):
+                break
+                
+            selected_questions = all_questions[start_idx:end_idx]
+            if len(selected_questions) < num_questions:
+                remaining = num_questions - len(selected_questions)
+                extra_questions = generate_questions(extracted_questions, remaining)
+                selected_questions.extend(extra_questions)
+            
+            paper_path = os.path.join(OUTPUT_FOLDER, f"question_paper_set_{i+1}.pdf")
+            create_question_paper(selected_questions, paper_path, i + 1)
+            pdf_paths.append(paper_path)
+        
+        return jsonify({"message": "Papers generated", "files": pdf_paths})
+    
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/download/<filename>', methods=['GET'])
+def download_paper(filename):
+    file_path = os.path.join(OUTPUT_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path, as_attachment=True)
+    return jsonify({"error": "File not found"}), 404
 
 @app.route('/', methods=['GET'])
 def health():
