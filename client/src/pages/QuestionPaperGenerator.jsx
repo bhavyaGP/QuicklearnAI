@@ -3,6 +3,7 @@ import { Upload, FileText, Loader2, Download, ArrowRight } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { paperService } from '../services/api';
+import { UploadLoadingScreen, GeneratingLoadingScreen, DownloadLoadingScreen } from '../components/LoadingScreens';
 
 const QuestionPaperGenerator = () => {
     const [file, setFile] = useState(null);
@@ -85,6 +86,11 @@ const QuestionPaperGenerator = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24">
+      {/* Show appropriate loading screen based on the current action */}
+      {isLoading && currentStep === 1 && <UploadLoadingScreen />}
+      {isLoading && currentStep === 2 && <GeneratingLoadingScreen />}
+      {isLoading && currentStep === 3 && <DownloadLoadingScreen />}
+      
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4">
