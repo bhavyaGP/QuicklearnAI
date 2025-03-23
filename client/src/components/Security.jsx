@@ -1,77 +1,104 @@
 import React from 'react';
+import { Shield, Lock, UserCheck, Server, Key, Database } from 'lucide-react';
 
 function Security() {
+  const securityFeatures = [
+    {
+      icon: <Shield className="w-6 h-6" />,
+      title: "End-to-End Encryption",
+      description: "Your conversations with teachers and AI are fully encrypted and secure."
+    },
+    {
+      icon: <Lock className="w-6 h-6" />,
+      title: "Data Protection",
+      description: "GDPR compliant data handling ensures your learning data stays private."
+    },
+    {
+      icon: <UserCheck className="w-6 h-6" />,
+      title: "Verified Teachers",
+      description: "All teachers undergo thorough verification and background checks."
+    },
+    {
+      icon: <Server className="w-6 h-6" />,
+      title: "Secure Infrastructure",
+      description: "Cloud infrastructure with multiple layers of security and redundancy."
+    },
+    {
+      icon: <Key className="w-6 h-6" />,
+      title: "Access Control",
+      description: "Role-based access control for students and teachers."
+    },
+    {
+      icon: <Database className="w-6 h-6" />,
+      title: "Data Backup",
+      description: "Regular backups and disaster recovery protocols."
+    }
+  ];
+
   return (
-    <div className="py-20 bg-black">
-      <div className="max-w-7xl mx-auto px-8">
-        <div className="mb-16">
-          <h2 className="text-6xl font-serif mb-6">
-            Secure and customizable
+    <div className="py-24 bg-black">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="text-center mb-20">
+          <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-[#00FF9D] to-[#00FF9D]/50 bg-clip-text text-transparent">
+            Security You Can Trust
           </h2>
-          <p className="text-gray-400 text-xl max-w-3xl">
-            Build custom solutions that adapt to your context, knowledge or brand voice,
-            with industry-leading security.
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Your learning journey is protected by industry-leading security measures
+            and data protection protocols.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Security Card */}
-          <div className="bg-[#11B981] p-8 rounded-2xl h-[400px] flex flex-col">
-            <div className="bg-black/20 rounded-xl p-6 mb-8 h-48 flex items-center">
-              <div className="grid grid-cols-3 gap-4 w-full">
-                <div className="bg-black rounded-lg p-4 flex items-center justify-center text-center">
-                  <div className="text-sm font-bold leading-tight">
-                    SOC 2<br />TYPE II
-                  </div>
+        {/* Main Security Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {securityFeatures.map((feature, index) => (
+            <div
+              key={index}
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md hover:border-[#00FF9D]/30 transition-all duration-500"
+            >
+              {/* Gradient Background Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#00FF9D]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative p-8">
+                {/* Icon Container */}
+                <div className="mb-6 w-12 h-12 rounded-lg bg-[#00FF9D]/10 flex items-center justify-center text-[#00FF9D] group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
                 </div>
-                <div className="bg-black rounded-lg p-4 flex items-center justify-center text-center">
-                  <div className="text-sm font-bold">GDPR</div>
-                </div>
-                <div className="bg-black rounded-lg p-4 flex items-center justify-center text-center">
-                  <div className="text-sm font-bold leading-tight">
-                    ISO<br />27001
-                  </div>
-                </div>
+                
+                {/* Content */}
+                <h3 className="text-xl font-semibold mb-4 text-white group-hover:text-[#00FF9D] transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                  {feature.description}
+                </p>
               </div>
             </div>
-            <h3 className="text-2xl font-serif mb-4 text-[#F4F4F4]">Industry-grade data security</h3>
-            <p className="text-black">
-              GDPR, ISO 27001, AICPA SOC 2 certification for industry-standard data security.
-            </p>
-          </div>
+          ))}
+        </div>
 
-          {/* Prompt Library Card */}
-          <div className="bg-[#11B981] p-8 rounded-2xl h-[400px] flex flex-col">
-            <div className="bg-black/20 rounded-xl p-6 mb-8 h-48">
-              <div className="bg-black rounded-lg p-4 h-full flex flex-col justify-center space-y-4">
-                <p className="text-sm">    Compose a professional email</p>
-                <p className="text-sm"> Generate a personalized daily</p>
+        {/* Certification Banner */}
+        <div className="mt-20 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-semibold mb-4 text-[#00FF9D]">
+                Industry Standard Certifications
+              </h3>
+              <p className="text-gray-400">
+                Our platform adheres to the highest security standards and certifications
+              </p>
+            </div>
+            <div className="flex items-center gap-8">
+              <div className="px-6 py-3 rounded-xl bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] font-medium">
+                ISO 27001
+              </div>
+              <div className="px-6 py-3 rounded-xl bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] font-medium">
+                GDPR
+              </div>
+              <div className="px-6 py-3 rounded-xl bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] font-medium">
+                SOC 2
               </div>
             </div>
-            <h3 className="text-2xl font-serif mb-4 text-[#F4F4F4]">Make your own prompt library</h3>
-            <p className="text-black">
-              Automate generation of text, comments and posts with one click.
-            </p>
-          </div>
-
-          {/* Chatbot Card */}
-          <div className="bg-[#11B981] p-8 rounded-2xl h-[400px] flex flex-col">
-            <div className="bg-black/20 rounded-xl p-6 mb-8 h-48">
-              <div className="bg-black rounded-lg p-4 h-full flex flex-col justify-between">
-                <div>
-                  <div className="text-sm mb-2">System</div>
-                  <div className="text-sm bg-zinc-800 rounded p-2">You are a custom nutrition expert</div>
-                </div>
-                <div>
-                  <div className="text-sm mb-2">Assistant</div>
-                  <div className="text-sm bg-zinc-800 rounded p-2">Here is an example response</div>
-                </div>
-              </div>
-            </div>
-            <h3 className="text-2xl font-serif mb-4 text-[#F4F4F4]">Create custom bots</h3>
-            <p className="text-black">
-              String instructions, context and knowledge together to create custom chatbots.
-            </p>
           </div>
         </div>
       </div>
