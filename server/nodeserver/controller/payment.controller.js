@@ -1,6 +1,7 @@
 const Razorpay = require('razorpay'); 
 const Membership = require('../models/membership.model');
 const Student = require('../models/student.model');
+const Order = require('../models/order.model');
 const { RAZORPAY_ID_KEY, RAZORPAY_SECRET_KEY } = process.env;
 const crypto = require('crypto');
 
@@ -13,15 +14,33 @@ const createOrder = async(req, res) => {
     try {
         const { membershipType } = req.body;
         const userId = req.userId;
+        
         // Get membership details
         const membership = await Membership.findOne({ type: membershipType });
         if (!membership) {
             return res.status(404).json({ success: false, msg: 'Membership type not found' });
         }
+
+        const razorpayOrderId = `order_${Date.now()}_${userId.slice(-6)}`;
+        
+        // Create order record
+        const order = new Order({
+            student: userId,
+            membership: membershipType,
+            amount: membership.price,
+            duration: membership.duration,
+            paymentDetails: {
+                orderId: razorpayOrderId,
+                status: 'pending'
+            },
+            features: membership.features
+        });
+        await order.save();
+
         const options = {
             amount: membership.price * 100,
             currency: 'INR',
-            receipt: `order_${Date.now()}_${userId.slice(-6)}`, // ✅ fixed
+            receipt: razorpayOrderId,
             payment_capture: 1,
             notes: {
                 membershipType: membershipType,
@@ -29,9 +48,8 @@ const createOrder = async(req, res) => {
                 duration: membership.duration
             }
         };
-        
 
-        razorpayInstance.orders.create(options, (err, order) => {
+        razorpayInstance.orders.create(options, (err, razorpayOrder) => {
             if (err) {
                 return res.status(400).json({
                     success: false,
@@ -43,7 +61,7 @@ const createOrder = async(req, res) => {
             res.status(200).json({
                 success: true,
                 msg: 'Order Created',
-                order_id: order.id,
+                order_id: razorpayOrder.id,
                 amount: membership.price,
                 membership: membership,
                 currency: 'INR',
@@ -82,10 +100,26 @@ const verifyPayment = async(req, res) => {
             return res.status(400).json({ success: false, msg: 'Invalid payment signature' });
         }
 
+        const startDate = new Date();
+        const endDate = new Date(Date.now() + (membership.duration * 24 * 60 * 60 * 1000));
+
+        // Update order status
+        await Order.findOneAndUpdate(
+            { "paymentDetails.orderId": razorpay_order_id },
+            {
+                "paymentDetails.paymentId": razorpay_payment_id,
+                "paymentDetails.status": "completed",
+                "validityPeriod": {
+                    startDate,
+                    endDate
+                }
+            }
+        );
+
         // Update student membership
         const membershipDetails = {
-            startDate: new Date(),
-            endDate: new Date(Date.now() + (membership.duration * 24 * 60 * 60 * 1000)),
+            startDate,
+            endDate,
             paymentId: razorpay_payment_id,
             orderId: razorpay_order_id,
             amount: membership.price,
@@ -110,7 +144,66 @@ const verifyPayment = async(req, res) => {
     }
 };
 
+// Admin endpoints for order management
+const getOrderStats = async(req, res) => {
+    try {
+        const totalStats = await Order.getTotalRevenue();
+        const membershipStats = await Order.getRevenueByMembership();
+        
+        res.status(200).json({
+            success: true,
+            stats: {
+                total: totalStats,
+                byMembership: membershipStats
+            }
+        });
+    } catch (error) {
+        console.error('Error getting order stats:', error);
+        res.status(500).json({ success: false, msg: 'Internal server error' });
+    }
+};
+
+const getOrders = async(req, res) => {
+    try {
+        const { status, membership, startDate, endDate, page = 1, limit = 10 } = req.query;
+        
+        let query = {};
+        if (status) query["paymentDetails.status"] = status;
+        if (membership) query.membership = membership;
+        if (startDate && endDate) {
+            query.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        const orders = await Order.find(query)
+            .populate('student', 'username email')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        const total = await Order.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            orders,
+            pagination: {
+                total,
+                pages: Math.ceil(total / limit),
+                page: parseInt(page),
+                limit: parseInt(limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting orders:', error);
+        res.status(500).json({ success: false, msg: 'Internal server error' });
+    }
+};
+
 module.exports = {
     createOrder,
-    verifyPayment
+    verifyPayment,
+    getOrderStats,
+    getOrders
 };

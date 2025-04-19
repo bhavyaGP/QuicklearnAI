@@ -16,6 +16,15 @@ function verifyUser(req, res, next) {
         res.status(401).json({ message: 'Unauthorized' });
     }
 }
+function verifyAdmin(req, res, next) {
+    if (req.body.email === 'iamquicklearn.ai@gmail.com' && req.body.password === 'Quicklearn@123') {
+        next();
+    } else {
+        res.status(401).json({ message: 'Unauthorized' });
+    }
+}
+
 module.exports = {
-    verifyUser
+    verifyUser,
+    verifyAdmin
 };

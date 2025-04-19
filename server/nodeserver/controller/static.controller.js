@@ -14,7 +14,8 @@ async function handlelogin(req, res) {
     try {
         let user;
         if (role === 'student') {
-            user = await student.findOne({ email });
+            user = await student.findOne({ email })
+                .select('+membership +membershipDetails +usage'); // Explicitly include these fields
             if (!user || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
@@ -64,6 +65,27 @@ async function handlelogin(req, res) {
             subject: user.subject,
             certification: user.certification
         };
+
+        // Add membership details for students
+        if (role === 'student') {
+            userResponse.membership = {
+                type: user.membership,
+                details: user.membershipDetails,
+                usage: user.usage,
+                status: user.membershipDetails?.status || 'pending',
+                expiresAt: user.membershipDetails?.endDate || null,
+                features: {
+                    ytSummary: {
+                        limit: user.membershipDetails?.features?.ytSummary || 3,
+                        used: user.usage?.summarizedVideos || 0
+                    },
+                    quizzes: {
+                        limit: user.membershipDetails?.features?.quiz || 0,
+                        taken: user.usage?.quizzesTaken || 0
+                    }
+                }
+            };
+        }
 
         res.status(200).json({
             message: 'Login successful',
