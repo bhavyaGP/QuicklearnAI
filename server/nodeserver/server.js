@@ -34,5 +34,3 @@ app.use('/chat', chatRoutes);
 app.listen(port, () => {
     console.log(`server is running on port http://localhost:${port}`);
 });
-
-
