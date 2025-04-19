@@ -17,11 +17,27 @@ function verifyUser(req, res, next) {
     }
 }
 function verifyAdmin(req, res, next) {
-    if (req.body.email === 'iamquicklearn.ai@gmail.com' && req.body.password === 'Quicklearn@123') {
-        next();
-    } else {
-        res.status(401).json({ message: 'Unauthorized' });
+    const authHeader = req.headers.authorization;
+    const token = authHeader ? authHeader.split('Bearer ')[1] : null;
+    if (token) {
+        try {
+            console.log("her");
+            
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log(decoded);
+            
+            if (decoded.role === 'admin') {
+                if(decoded.email === 'iamquicklearn.ai@gmail.com'){
+                    next();
+                }
+            } else {
+                res.status(401).json({ message: 'Unauthorized' });
+            }
+        } catch (err) {
+            res.status(401).json({ message: 'Unauthorized' });
+        }
     }
+    
 }
 
 module.exports = {
