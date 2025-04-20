@@ -71,7 +71,7 @@ const verifyPayment = async(req, res) => {
             membership,
             userId
         } = req.body;
-
+console.log('Received payment verification request:', req.body);
         // Verify payment signature
         const generated_signature = crypto
             .createHmac('sha256', RAZORPAY_SECRET_KEY)
@@ -81,26 +81,32 @@ const verifyPayment = async(req, res) => {
         if (generated_signature !== razorpay_signature) {
             return res.status(400).json({ success: false, msg: 'Invalid payment signature' });
         }
-
+        let price
+        if(membership == "Achiever"){
+            price = 99;
+        }
+        else{
+            price = 49;
+        }
         // Update student membership
         const membershipDetails = {
             startDate: new Date(),
-            endDate: new Date(Date.now() + (membership.duration * 24 * 60 * 60 * 1000)),
+            endDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)),
             paymentId: razorpay_payment_id,
             orderId: razorpay_order_id,
-            amount: membership.price,
+            amount: price,
             status: 'active'
         };
 
         await Student.findByIdAndUpdate(userId, {
-            membership: membership.type,
+            membership: membership,
             membershipDetails: membershipDetails
         });
 
         res.status(200).json({
             success: true,
             msg: 'Payment verified successfully',
-            membership: membership.type,
+            membership: membership,
             membershipDetails,
             isverified: true
         });

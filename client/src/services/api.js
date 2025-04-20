@@ -577,3 +577,93 @@ export const paperService = {
     }
   }
 };
+
+export const paymentService = {
+  createOrder: async (orderData) => {
+    try {
+      const userInfo = localStorage.getItem('user-info');
+      if (!userInfo) {
+        throw new Error('User not authenticated');
+      }
+
+      const { token } = JSON.parse(userInfo);
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await api2.post('/user/user/api/payment', {
+        membershipType: orderData.membershipType,
+        name: orderData.name,
+        email: orderData.email,
+        contact: orderData.contact,
+        duration: 30 // Default duration in days
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Order Creation Response:', response.data);
+      
+      // Check if the response has the required fields
+      if (!response.data || !response.data.order_id) {
+        console.error('Invalid order response structure:', response.data);
+        throw new Error('Invalid order response from server');
+      }
+      
+      // Return formatted order data
+      return {
+        id: response.data.order_id,
+        amount: response.data.amount || 0,
+        currency: response.data.currency || 'INR',
+        description: response.data.description || `${orderData.membershipType} Membership - 30 days`,
+        notes: {
+          membershipType: orderData.membershipType,
+          duration: 30, // Default duration in days
+          name: orderData.name,
+          email: orderData.email,
+          contact: orderData.contact
+        }
+      };
+    } catch (error) {
+      console.error('Create order error:', error);
+      throw error;
+    }
+  },
+
+  verifyPayment: async (paymentData) => {
+    try {
+      const userInfo = localStorage.getItem('user-info');
+      if (!userInfo) {
+        throw new Error('User not authenticated');
+      }
+
+      const { token } = JSON.parse(userInfo);
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      console.log('Verifying payment with data:', paymentData);
+
+      const response = await api2.post('/user/user/api/verifypayment', {
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_signature: paymentData.razorpay_signature,
+        membershipType: paymentData.membershipType,
+        
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Verification response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Verify payment error:', error);
+      throw error;
+    }
+  }
+};
