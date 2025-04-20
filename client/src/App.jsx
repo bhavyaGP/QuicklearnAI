@@ -28,6 +28,10 @@ import StudentLobby from './pages/StudentLobby'
 import PrivateRoute from './components/PrivateRoute'
 import YouTubeChat from './pages/YouTubeChat'
 import QuestionPaperGenerator from './pages/QuestionPaperGenerator'
+import Subscription from './components/Subscription'
+import AdminDashboard from './components/AdminDashboard'
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Home() {
   const contentRef = useRef()
@@ -92,8 +96,10 @@ function App() {
   };
 
   return (
+    
     <Router>
       <div className="min-h-screen bg-black text-white">
+        <ToastContainer />
         <NavbarWrapper />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -131,6 +137,8 @@ function App() {
           <Route path="/doubt/create" element={<PrivateRoute element={<DoubtCreation />} allowedRoles={['student']} />} />
           <Route path="/doubt/:doubtId/chat" element={<ChatRoom />} />
           <Route path="/doubt/:doubtId/matched" element={<MatchedTeachers />} />
+          <Route path="/subscription" element={<Subscription/>} />
+          <Route path="/admin" element={<AdminDashboard/>} />
           <Route
             path="/create-quiz"
             element={

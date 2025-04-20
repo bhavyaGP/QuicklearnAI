@@ -26,6 +26,7 @@
     "react-flow": "^1.0.3",
     "react-flow-renderer": "^10.3.17",
     "react-router-dom": "^7.1.1",
+    "react-toastify": "^11.0.5",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.6.0"
   },

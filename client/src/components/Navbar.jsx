@@ -18,7 +18,8 @@ function Navbar({ onSignUpClick, onLoginClick }) {
     { to: "/chatbot", label: "ChatBot" },
     { to: "/quiz", label: "Chat With QuickLearnAI" },
     { to: "/recommendations", label: "Recommendations" },
-    { to: "/doubt/create", label: "Doubt" }
+    { to: "/doubt/create", label: "Doubt" },
+    { to: "/subscription", label: "Subscription"}
   ];
 
   useEffect(() => {
