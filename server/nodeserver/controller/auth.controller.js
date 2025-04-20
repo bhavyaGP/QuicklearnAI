@@ -32,6 +32,9 @@ exports.googleAuth = async (req, res, next) => {
                 username: name,
                 email,
                 phone: null,
+                membership: 'Explorer',
+                membershipDetails: {},
+                usage: {},
             });
         }
 
