@@ -38,7 +38,7 @@ const createOrder = async(req, res) => {
         await order.save();
 
         const options = {
-            amount: membership.price * 100,
+            amount: membership.price * 100,  // Converting to paise
             currency: 'INR',
             receipt: razorpayOrderId,
             payment_capture: 1,
@@ -89,7 +89,7 @@ const verifyPayment = async(req, res) => {
             membership,
             userId
         } = req.body;
-console.log('Received payment verification request:', req.body);
+
         // Verify payment signature
         const generated_signature = crypto
             .createHmac('sha256', RAZORPAY_SECRET_KEY)
@@ -99,6 +99,7 @@ console.log('Received payment verification request:', req.body);
         if (generated_signature !== razorpay_signature) {
             return res.status(400).json({ success: false, msg: 'Invalid payment signature' });
         }
+
         let price
         if(membership == "Achiever"){
             price = 99;
@@ -106,13 +107,30 @@ console.log('Received payment verification request:', req.body);
         else{
             price = 49;
         }
+
+        const startDate = new Date();
+        const endDate = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
+
+        // Update order status
+        await Order.findOneAndUpdate(
+            { "paymentDetails.orderId": razorpay_order_id },
+            {
+                "paymentDetails.paymentId": razorpay_payment_id,
+                "paymentDetails.status": "completed",
+                "validityPeriod": {
+                    startDate,
+                    endDate
+                }
+            }
+        );
+
         // Update student membership
         const membershipDetails = {
-            startDate: new Date(),
-            endDate: new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)),
+            startDate,
+            endDate,
             paymentId: razorpay_payment_id,
             orderId: razorpay_order_id,
-            amount: price,
+            amount:price,
             status: 'active'
         };
 

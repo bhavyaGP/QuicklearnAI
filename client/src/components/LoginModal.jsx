@@ -28,7 +28,6 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
         },
         withCredentials: true
       });
-
       if (response.data && response.data.token) {
         const { user, token } = response.data;
         const userInfo = {
@@ -49,7 +48,7 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
           navigate('/dashboard');
         }
       }
-    } catch (error) {
+    } catch (error) {8
       setError(error.response?.data?.message || 'Login failed');
       console.error('Login error:', error);
     }

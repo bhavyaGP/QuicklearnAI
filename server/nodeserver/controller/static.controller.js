@@ -1,5 +1,6 @@
 const student = require('../models/student.model');
 const teacher = require('../models/teacher.model');
+const admin = require('../models/admin.model');
 const jwt = require('jsonwebtoken');
 const redis = require('../redis.connection');
 
@@ -9,7 +10,7 @@ async function handlelogin(req, res) {
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
     }
-
+    console.log(email, password, role);
     try {
         let user;
         if (role === 'student') {
@@ -18,15 +19,14 @@ async function handlelogin(req, res) {
             if (!user || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-        }else if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){        
-            user = {
-                _id: 'admin',
-                email: 'iamquicklearn.ai@gmail.com',
-                username: 'Admin',
-                role: 'admin',
-                isOnline: true,
-                avatar: 'https://ui-avatars.com/api/?name=Admin'
-            };
+            console.log(user)
+            return res.status(200).json({ message: 'Login successful', user });
+        }else if(role==='admin'){
+            user = await admin.findOne({ email });
+            if (!user || user.password !== password) {
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+            return res.status(200).json({ message: 'Login successful', user });       
         }else if (role === 'teacher') {
             user = await teacher.findOne({ email });
             if (user == null || user.password !== password) {
@@ -50,7 +50,7 @@ async function handlelogin(req, res) {
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-
+        console.log(user);
         res.cookie('authtoken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -132,7 +132,21 @@ async function handleregister(req, res) {
                 phone: phone || null
             });
 
-        } else if (role === 'teacher') {
+        }else if (role==='admin'){
+            //find from the admin 
+            user = await admin.findOne({ email });
+            if (user) {
+                return res.status(400).json({ message: 'Admin already exists' });
+            }
+            newUser = await admin.create({
+                email,
+                password: password || null, // Make password optional for Google Auth
+                username,
+                phone: phone || null
+            });
+            return res.status(201).json({ message: 'Admin registered successfully' });
+        } 
+        else if (role === 'teacher') {
             const {
                 highestQualification,
                 experience,
