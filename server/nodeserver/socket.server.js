@@ -6,7 +6,7 @@ const redis = require("./redis.connection");
 const socketPort = process.env.SOCKET_PORT || 5002;
 const io = new Server(socketPort, {
     cors: {
-        origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+        origin: [`${import.meta.env.PROXY_API_URL}`, 'http://localhost:5173', 'http://localhost:5174'],
         credentials: true,
         optionsSuccessStatus: 200
     }
