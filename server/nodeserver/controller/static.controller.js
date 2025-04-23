@@ -18,15 +18,18 @@ async function handlelogin(req, res) {
             if (!user || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-        }else if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){        
-            user = {
-                _id: 'admin',
-                email: 'iamquicklearn.ai@gmail.com',
-                username: 'Admin',
-                role: 'admin',
-                isOnline: true,
-                avatar: 'https://ui-avatars.com/api/?name=Admin'
-            };
+        }
+        else if(role === 'admin'){        
+            if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
+                user = {
+                    _id: 'admin',
+                    email: 'iamquicklearn.ai@gmail.com',
+                    username: 'Admin',
+                    role: 'admin',
+                    isOnline: true,
+                    avatar: 'https://ui-avatars.com/api/?name=Admin'
+                };
+            }
         }else if (role === 'teacher') {
             user = await teacher.findOne({ email });
             if (user == null || user.password !== password) {

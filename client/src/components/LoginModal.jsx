@@ -15,12 +15,17 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
     setError('');
     
     const formData = new FormData(e.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    
     const data = {
       email: formData.get('email'),
       password: formData.get('password'),
       role: activeTab
     };
-
+    if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
+      data.role = 'admin';
+    }
     try {
       const response = await axios.post('http://localhost:3001/login', data, {
         headers: {
@@ -43,7 +48,9 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
         localStorage.setItem('user-info', JSON.stringify(userInfo));
         onClose();
         // Redirect based on role
-        if (activeTab === 'teacher') {
+        if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
+          navigate('/admin');
+        }else if (activeTab === 'teacher') {
           navigate('/teacher-dashboard');
         } else {
           navigate('/dashboard');
