@@ -23,7 +23,7 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`;
 
     try {
-      const response = await axios.post('http://localhost:3001/register', data, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/register`, data, {
         headers: {
           'Content-Type': 'application/json',
         },

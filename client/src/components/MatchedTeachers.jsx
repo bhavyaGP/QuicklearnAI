@@ -32,7 +32,7 @@ const MatchedTeachers = () => {
 
       let fullResponse = ''; // To store the complete response
 
-      const response = await fetch('http://localhost:3000/user/doubt/aisolve', {
+      const response = await fetch(`${import.meta.env.PROXY_API_URL}/user/doubt/aisolve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

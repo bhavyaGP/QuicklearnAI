@@ -61,7 +61,7 @@ const TeacherDashboard = () => {
     // Fetch teacher's doubts on mount
     const fetchDoubts = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/doubt/teacher/${userInfo._id}/doubts`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/doubt/teacher/${userInfo._id}/doubts`, {
           headers: {
             'Authorization': `Bearer ${userInfo.token}`
           }

@@ -1,9 +1,7 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5002';
-
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5002'],
+  origin: [`${import.meta.env.PROXY_API_URL}`, `${import.meta.env.SOCKET_URL}`],
   credentials: true,
   optionsSuccessStatus: 200
 };

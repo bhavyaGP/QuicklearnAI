@@ -9,7 +9,7 @@ const api = axios.create({
 });
 
 const api2 = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: `${import.meta.env.PROXY_API_URL}`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -535,7 +535,7 @@ export const paperService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post('http://localhost:3000/gen/paper_upload', formData, {
+      const response = await axios.post(`${import.meta.env.PROXY_API_URL}gen/paper_upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -549,7 +549,7 @@ export const paperService = {
 
   generatePaper: async (filePath, numQuestions, numPapers) => {
     try {
-      const response = await axios.post('http://localhost:3000/gen/generate_paper', {
+      const response = await axios.post(`${import.meta.env.PROXY_API_URL}/gen/generate_paper`, {
         file_path: filePath,
         num_questions: numQuestions,
         num_papers: numPapers

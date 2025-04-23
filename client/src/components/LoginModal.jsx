@@ -27,7 +27,7 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
       data.role = 'admin';
     }
     try {
-      const response = await axios.post('http://localhost:3001/login', data, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, data, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -64,7 +64,7 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
   const googleAuth = async (code) => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/auth/google?code=${code}&role=${activeTab}`,
+        `${import.meta.env.VITE_API_URL}/auth/google?code=${code}&role=${activeTab}`,
         {
           withCredentials: true,
           headers: {
