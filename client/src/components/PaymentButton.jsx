@@ -72,15 +72,13 @@ const PaymentButton = ({ membershipType, price, name, email, contact }) => {
       // Configure Razorpay options
       const options = {
         key: 'rzp_test_OpvAsbojSQhhkd',
-        amount: orderData.amount * 100, // Convert to paise
+        amount: orderData.amount, // Already in paise from backend
         currency: orderData.currency || 'INR',
         name: 'QuicklearnAI',
         description: orderData.description,
         order_id: orderData.id,
         handler: async function (response) {
           try {
-
-
             if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
               toast.error('Invalid payment response');
               return;
@@ -90,7 +88,7 @@ const PaymentButton = ({ membershipType, price, name, email, contact }) => {
             const verificationData = {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
-            razorpay_signature: response.razorpay_signature,
+              razorpay_signature: response.razorpay_signature,
               membership: orderDetails.membershipType,
             };
             console.log('Verification data:', verificationData);
@@ -153,4 +151,4 @@ const PaymentButton = ({ membershipType, price, name, email, contact }) => {
   );
 };
 
-export default PaymentButton; 
+export default PaymentButton;

@@ -68,7 +68,7 @@ gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct mode
 
 # groq_api_key = "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"
 groq_model = ChatGroq(
-    model="llama-3.3-70b-specdec",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
@@ -297,7 +297,7 @@ def chat_with_transcript():
 def llama_generate_recommendations(prompt):
     try:
         llm = ChatGroq(
-            model="llama-3.3-70b-specdec",
+            model="llama-3.3-70b-versatile",
             temperature=0,
             groq_api_key=os.getenv("GROQ_API_KEY")
         )
@@ -653,7 +653,7 @@ def generate_mind_map(content):
     """
 
     llm = ChatGroq(
-        model="llama-3.3-70b-specdec",
+        model="llama-3.3-70b-versatile",
         temperature=0,
         groq_api_key=os.getenv("GROQ_API_KEY"),
     )      
@@ -689,7 +689,7 @@ def generate_mind_map_endpoint():
     return jsonify(mind_map)
 
 llm = ChatGroq(
-    model="llama-3.3-70b-specdec",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY"),
 )
@@ -750,7 +750,7 @@ def quiz_endpoint():
 
 
 llm = ChatGroq(
-    model="llama-3.3-70b-specdec",
+    model="llama-3.3-70b-versatile",
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
@@ -859,7 +859,7 @@ def extract_questions_from_pdf(pdf_path):
 
 def generate_questions(extracted_questions, num_questions):
     llm = ChatGroq(
-        model="llama-3.3-70b-specdec",
+        model="llama-3.3-70b-versatile",
         temperature=0.7,
         groq_api_key=groq_api_key
     )
