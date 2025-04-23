@@ -22,6 +22,9 @@ function Navbar({ onSignUpClick, onLoginClick }) {
     { to: "/subscription", label: "Subscription"}
   ];
 
+  const adminLinks = [
+    { to: "/admin", label: "Admin Dashboard" }
+  ];
   useEffect(() => {
     // Check if user is logged in by looking for user-info in localStorage
     const userInfo = JSON.parse(localStorage.getItem('user-info'));

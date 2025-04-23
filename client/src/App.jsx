@@ -32,6 +32,8 @@ import Subscription from './components/Subscription'
 import AdminDashboard from './components/AdminDashboard'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 function Home() {
   const contentRef = useRef()
@@ -173,6 +175,8 @@ function App() {
               />
             } 
           />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
         </Routes>
 
         {showLoginModal && (
