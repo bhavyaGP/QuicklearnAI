@@ -15,19 +15,16 @@ async function handlelogin(req, res) {
         let user;
         if (role === 'student') {
             user = await student.findOne({ email })
-                .select('+membership +membershipDetails +usage'); // Explicitly include these fields
+                .select('+membership +membershipDetails +usage');
             if (!user || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-            console.log(user)
-            return res.status(200).json({ message: 'Login successful', user });
-        }else if(role==='admin'){
+        } else if(role === 'admin') {
             user = await admin.findOne({ email });
             if (!user || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-            return res.status(200).json({ message: 'Login successful', user });       
-        }else if (role === 'teacher') {
+        } else if (role === 'teacher') {
             user = await teacher.findOne({ email });
             if (user == null || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
@@ -41,16 +38,27 @@ async function handlelogin(req, res) {
                 subcategory: sub.subcategory
             }));
 
-            redis.hmset(`teacher:${user._id}`, 'email', user.email, 'username', user.username, 'rating', user.rating, 'doubtsSolved', user.doubtsSolved, 'field', subjects[0].field, "subcategory", subjects[0].subcategory, 'certification', JSON.stringify(user.certification));
+            redis.hmset(`teacher:${user._id}`, 
+                'email', user.email, 
+                'username', user.username, 
+                'rating', user.rating, 
+                'doubtsSolved', user.doubtsSolved, 
+                'field', subjects[0].field, 
+                "subcategory", subjects[0].subcategory, 
+                'certification', JSON.stringify(user.certification)
+            );
         } else {
             return res.status(400).json({ message: 'Invalid role' });
         }
+
+        // Generate token for all successful logins
         const token = jwt.sign(
-            { id: user._id, role: user.role, email: user.email },
+            { id: user._id, role: user.role || role, email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        console.log(user);
+
+        // Set cookie for all successful logins
         res.cookie('authtoken', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -63,7 +71,7 @@ async function handlelogin(req, res) {
             username: user.username,
             isOnline: user.isOnline,
             avatar: user.avatar,
-            role:user.role,
+            role: role,
             rating: user.rating,
             doubtsSolved: user.doubtsSolved,
             subject: user.subject,
@@ -91,11 +99,13 @@ async function handlelogin(req, res) {
             };
         }
 
-        res.status(200).json({
+        // Send consistent response format for all roles
+        return res.status(200).json({
             message: 'Login successful',
             user: userResponse,
             token
         });
+
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ message: 'Internal server error' });
