@@ -1,15 +1,16 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:5001',
+  baseURL: import.meta.env.VITE_GEN_PROXY,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true
 });
-
+const url = import.meta.env.VITE_API_URL;
+console.log('GEN_PROXY URL:', url);
 const api2 = axios.create({
-  baseURL: `${import.meta.env.PROXY_API_URL}`,
+  baseURL: import.meta.env.VITE_PROXY_API_URL ,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -535,7 +536,7 @@ export const paperService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${import.meta.env.PROXY_API_URL}gen/paper_upload`, formData, {
+      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY_URL}/gen/paper_upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -549,7 +550,7 @@ export const paperService = {
 
   generatePaper: async (filePath, numQuestions, numPapers) => {
     try {
-      const response = await axios.post(`${import.meta.env.PROXY_API_URL}/gen/generate_paper`, {
+      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY_URL}/gen/generate_paper`, {
         file_path: filePath,
         num_questions: numQuestions,
         num_papers: numPapers
