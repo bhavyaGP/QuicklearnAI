@@ -56,7 +56,7 @@ const QuestionPaperGenerator = () => {
       // Generate paper URLs based on the response
       const papers = [];
       for (let i = 1; i <= numPapers; i++) {
-        const paperUrl = `http://localhost:5001/download/question_paper_set_${i}.pdf`;
+        const paperUrl = `${import.meta.env.GEN_PROXY}/download/question_paper_set_${i}.pdf`;
         papers.push(paperUrl);
       }
       setGeneratedPapers(papers);

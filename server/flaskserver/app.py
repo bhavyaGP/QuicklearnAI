@@ -47,13 +47,17 @@ redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_respo
 
 app = Flask(__name__)
 SECRET_KEY = "quick" 
-mongo_client = MongoClient("mongodb://localhost:27017/quicklearnai") 
+mongo_client = MongoClient(os.getenv('MONGODB_URI', 'mongodb://localhost:27017/quicklearnai')) 
 db = mongo_client["quicklearnai"]
 topics_collection = db["statistics"]
 
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
+        "origins": [
+            "http://localhost:5173",  # Frontend
+            "http://localhost:3000",  # Main/Proxy server
+            "http://localhost:3001"   # Node server
+        ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
@@ -96,7 +100,7 @@ def get_and_enhance_transcript(youtube_url, model_type='gemini'):
         # Enhanced transcript prompt
         prompt = f"""
         Act as a transcript cleaner. Generate a new transcript with the same context and content as the given transcript.
-        If there’s a revision portion, differentiate it from the actual transcript.
+        If there's a revision portion, differentiate it from the actual transcript.
         Output in sentences line by line. If the transcript lacks educational content, return 'Fake transcript'.
         Transcript: {formatted_transcript}
         """
@@ -623,7 +627,6 @@ def query_file():
         
 #         return jsonify({"message": "Voice settings updated successfully"}), 200
 #     except Exception as e:
-#         return jsonify({"error": f"Error configuring voice: {str(e)}"}), 500
 #         return jsonify({"error": f"Error configuring voice: {str(e)}"}), 500
 # # MindMap
 
