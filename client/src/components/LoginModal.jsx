@@ -23,9 +23,11 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
       password: formData.get('password'),
       role: activeTab
     };
+
     if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
       data.role = 'admin';
     }
+
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, data, {
         headers: {
@@ -33,31 +35,39 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
         },
         withCredentials: true
       });
-      if (response.data && response.data.token) {
+
+      console.log('Login response:', response.data); // Debug log
+
+      if (response.data && response.data.user) {
         const { user, token } = response.data;
         const userInfo = {
           email: user.email,
           username: user.username,
           token,
           avatar: user.avatar,
-          role: activeTab,
+          role: data.role, // Use the role from our request data
           _id: user._id
         };
         
         localStorage.setItem('user-info', JSON.stringify(userInfo));
+        
+        // Close the modal first
         onClose();
-        // Redirect based on role
-        if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
+
+        // Then handle navigation
+        if(data.role === 'admin') {
           navigate('/admin');
-        }else if (activeTab === 'teacher') {
+        } else if (data.role === 'teacher') {
           navigate('/teacher-dashboard');
         } else {
           navigate('/dashboard');
         }
+      } else {
+        throw new Error('Invalid response format from server');
       }
-    } catch (error) {8
-      setError(error.response?.data?.message || 'Login failed');
+    } catch (error) {
       console.error('Login error:', error);
+      setError(error.response?.data?.message || error.message || 'Login failed');
     }
   };
 
