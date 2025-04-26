@@ -34,6 +34,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
+import QuestionBankGenerator from './components/QuestionBankGenerator'
 
 function Home() {
   const contentRef = useRef()
@@ -177,6 +178,7 @@ function App() {
           />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/question-bank" element={<QuestionBankGenerator />} />
         </Routes>
 
         {showLoginModal && (

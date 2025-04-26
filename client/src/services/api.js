@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { saveAs } from 'file-saver';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_GEN_PROXY,
@@ -665,6 +666,37 @@ export const paymentService = {
     } catch (error) {
       console.error('Verify payment error:', error);
       throw error;
+    }
+  }
+};
+
+export const questionBankService = {
+  generateQuestionBank: async (topic) => {
+    try {
+      const response = await api.post('/question_bank', 
+        { topic },
+        { 
+          responseType: 'blob',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Create and save the PDF file
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      saveAs(blob, `${topic.replace(/\s+/g, '_')}_Questions.pdf`);
+      
+      return true;
+    } catch (error) {
+      console.error('Question bank generation error:', error);
+      if (error.response) {
+        throw new Error(error.response.data.error || 'Failed to generate question bank');
+      } else if (error.request) {
+        throw new Error('No response from server');
+      } else {
+        throw new Error('Error setting up request');
+      }
     }
   }
 };

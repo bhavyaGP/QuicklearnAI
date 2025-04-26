@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, User, Bot, Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { documentService } from '../services/api';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 const formatBotResponse = (text) => {
   if (!text) return [];
@@ -181,6 +182,7 @@ const ChatBot = () => {
 
   return (
     <div className="min-h-screen bg-black text-white pt-24">
+      <AnimatedBackground/>
       <div className="max-w-4xl mx-auto p-8">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4">
