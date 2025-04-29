@@ -16,20 +16,31 @@ const studentschema = new mongoose.Schema({
     },
     membership: {
         type: String,
-        enum: ['Explorer', 'Achiever', 'Scholar'],
+        enum: ['Explorer', 'Scholar', 'Achiever'],
         default: 'Explorer',
         required: true
     },
     membershipDetails: {
-        startDate: Date,
-        endDate: Date,
+        startDate: {
+            type: Date,
+            default: Date.now
+        },
+        endDate: {
+            type: Date,
+            default: function() {
+                const date = new Date();
+                date.setDate(date.getDate() + 30); // Default 30 days
+                return date;
+            }
+        },
         paymentId: String,
         orderId: String,
+        transactionId: String,
         amount: Number,
         status: {
             type: String,
-            enum: ['active', 'expired', 'pending'],
-            default: 'pending'
+            enum: ['active', 'inactive', 'pending'],
+            default: 'active'
         }
     },
     usage: {
@@ -44,6 +55,22 @@ const studentschema = new mongoose.Schema({
         lastActive: {
             type: Date,
             default: Date.now
+        },
+        ytSummary: {
+            type: Number,
+            default: 0
+        },
+        quiz: {
+            type: Number,
+            default: 0
+        },
+        chatbot: {
+            type: Number,
+            default: 0
+        },
+        mindmap: {
+            type: Number,
+            default: 0
         }
     },
     password: {
