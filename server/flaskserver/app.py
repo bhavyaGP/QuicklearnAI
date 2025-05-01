@@ -1,3 +1,5 @@
+from contextlib import redirect_stdout
+import unicodedata
 from flask import Flask, request, jsonify, send_file
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import TextFormatter
@@ -44,6 +46,15 @@ import google.generativeai as genai
 from pptx import Presentation
 import redis
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.colors import HexColor
+from reportlab.lib.units import inch
+from agno.agent import Agent
+from agno.models.groq import Groq
+from agno.tools.duckduckgo import DuckDuckGoTools
+import requests
 
 app = Flask(__name__)
 SECRET_KEY = "quick" 
@@ -76,6 +87,7 @@ groq_model = ChatGroq(
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
+os.environ["SERPER_API_KEY"] = "85a684d9cfcddab4886460954ef36f054053529b"
 
 def get_and_enhance_transcript(youtube_url, model_type='gemini'):
     try:
@@ -978,6 +990,271 @@ def download_paper(filename):
 @app.route('/', methods=['GET'])
 def health():
     return jsonify({"status": "ok"}) 
+
+def initialize_question_bank_agent():
+    try:
+        groq_model = Groq(
+            id="llama3-70b-8192",
+            api_key=groq_api_key
+        )
+        agent = Agent(
+            model=groq_model,
+            description=(
+                "You are a helpful assistant that creates challenging practice problems. "
+                "When asked to create questions, format them with numbers (1., 2., etc.) "
+                "and make them clear and well-structured."
+            ),
+            tools=[DuckDuckGoTools()],
+            show_tool_calls=False,
+            markdown=False
+        )
+        return agent
+    except Exception as e:
+        raise Exception(f"Error initializing agent: {str(e)}")
+
+def get_agent_response(agent, prompt):
+    try:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            agent.print_response(prompt)
+        response = buffer.getvalue()
+        
+        if not response:
+            raise Exception("No response received from agent")
+        
+        cleaned = unicodedata.normalize('NFKD', response).encode('ascii', 'ignore').decode('ascii')
+        cleaned = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', cleaned)
+        cleaned = re.sub(r'Running:.*?\n', '', cleaned)
+        cleaned = re.sub(r'Response:?\s*', '', cleaned)
+        cleaned = re.sub(r'<tool-use>.*?</tool-use>', '', cleaned, flags=re.DOTALL)
+        cleaned = re.sub(r'\(\d+\.\d+s\)', '', cleaned)
+        cleaned = re.sub(r'Here are \d+ practice problems.*?:(?=\n)', '', cleaned)
+        cleaned = re.sub(r'1\., 2\., etc\.\).*?\n', '', cleaned)
+        cleaned = re.sub(r'Make each question clear and well-formatted.*?numerical questions over theory\.', '', cleaned)
+        cleaned = re.sub(r'\n\s*\n', '\n\n', cleaned)
+        cleaned = re.sub(r'\s+', ' ', cleaned)
+        cleaned = cleaned.strip()
+        
+        questions = []
+        current_question = ""
+        for line in cleaned.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            if re.match(r'^\d+\.', line):
+                if current_question:
+                    questions.append(current_question.strip())
+                current_question = line
+            elif current_question:
+                current_question += " " + line
+        
+        if current_question:
+            questions.append(current_question.strip())
+        
+        if not questions:
+            matches = re.findall(r'(\d+\..*?)(?=\d+\.|$)', cleaned, re.DOTALL)
+            questions = [q.strip() for q in matches]
+        
+        if not questions:
+            return "1. Error: No questions could be generated. Please try again."
+        
+        formatted_questions = []
+        for i, q in enumerate(questions, 1):
+            q = q.strip()
+            if not re.match(r'^\d+\.', q):
+                q = f"{i}. {q}"
+            formatted_questions.append(q)
+        
+        return "\n\n".join(formatted_questions)
+        
+    except Exception as e:
+        return f"1. An error occurred while generating questions: {str(e)}"
+
+def create_question_bank_pdf(text, subject):
+    question_bank_dir = os.path.join(os.getcwd(), "generated_papers")
+    os.makedirs(question_bank_dir, exist_ok=True)
+    
+    filename = os.path.join(question_bank_dir, f"{subject.replace(' ', '_')}_Questions.pdf")
+    
+    try:
+        doc = SimpleDocTemplate(filename, pagesize=letter,
+                              rightMargin=72, leftMargin=72,
+                              topMargin=72, bottomMargin=72)
+        
+        styles = getSampleStyleSheet()
+        
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontName='Helvetica-Bold',
+            fontSize=28,
+            spaceAfter=20,
+            alignment=1,
+            textColor=HexColor('#FFD700'),
+            leading=32
+        )
+        
+        question_style = ParagraphStyle(
+            'CustomQuestion',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=12,
+            leading=18,
+            spaceBefore=20,
+            spaceAfter=20,
+            firstLineIndent=0,
+            leftIndent=20,
+            textColor=HexColor('#00FF9D')
+        )
+        
+        elements = []
+        elements.append(Paragraph(f"{subject} Practice Questions", title_style))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        questions = [q.strip() for q in text.split('\n\n') if q.strip()]
+        for q in questions:
+            q = q.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            p = Paragraph(q, question_style)
+            elements.append(p)
+        
+        def add_watermark_and_background(canvas, doc):
+            canvas.saveState()
+            canvas.setFillColorRGB(0, 0, 0)
+            canvas.rect(0, 0, doc.pagesize[0], doc.pagesize[1], fill=1)
+            canvas.setFont("Helvetica-Bold", 60)
+            canvas.setFillColorRGB(0.9, 0.9, 0.9, alpha=0.5)
+            canvas.translate(doc.pagesize[0]/2, doc.pagesize[1]/2)
+            canvas.rotate(45)
+            canvas.drawCentredString(0, 0, "QuickLearn AI")
+            canvas.restoreState()
+        
+        doc.build(elements, onFirstPage=add_watermark_and_background, onLaterPages=add_watermark_and_background)
+        
+        return filename
+    
+    except Exception as e:
+        raise Exception(f"Error building PDF: {str(e)}")
+
+# Add the new route
+@app.route('/question_bank', methods=['POST', 'OPTIONS'])
+def generate_question_bank():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+        
+    try:
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+        
+        data = request.get_json()
+        subject = data.get('topic')
+        
+        if not subject or not isinstance(subject, str):
+            return jsonify({"error": "Invalid or missing 'topic' in payload"}), 400
+        
+        subject = subject.strip()
+        if not subject:
+            return jsonify({"error": "Topic cannot be empty"}), 400
+        
+        agent = initialize_question_bank_agent()
+        
+        prompt = (
+            f"Create 10 challenging practice problems on {subject}. "
+            "Number each question with a number and period (1., 2., etc.). "
+            "Make each question clear and well-formatted on its own line. "
+            "Include a mix of difficulty levels from basic to advanced. "
+            "Focus on numerical questions over theoretical ones."
+        )
+ 
+        result_text = get_agent_response(agent, prompt)
+        
+        if result_text.startswith("1. Error:") or result_text.startswith("1. An error occurred"):
+            return jsonify({"error": "Failed to generate questions"}), 500
+        
+        pdf_path = create_question_bank_pdf(result_text, subject)
+        
+        return send_file(
+            pdf_path,
+            as_attachment=True,
+            download_name=f"{subject.replace(' ', '_')}_Questions.pdf",
+            mimetype='application/pdf'
+        )
+    
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+    
+def search_youtube_videos(topic, max_results=3):
+    url = "https://google.serper.dev/videos"
+    payload = {"q": f"{topic} tutorial"}
+    headers = {
+        "X-API-KEY": os.environ["SERPER_API_KEY"],
+        "Content-Type": "application/json"
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "videos" not in data:
+            return []
+        
+        # Extract up to max_results URLs
+        urls = [video.get("link", "") for video in data.get("videos", [])[:max_results]]
+        return urls
+    except requests.RequestException as e:
+        print(f"Serper API error for {topic}: {e}")
+        return []
+
+def is_valid_youtube_url(url):
+    pattern = r'^(https?://(www\.)?youtube\.com/watch\?v=[\w-]{11}|https?://youtu\.be/[\w-]{11})'
+    return bool(re.match(pattern, url))
+
+@app.route('/youtube_videos', methods=['POST', 'OPTIONS'])
+def youtube_videos():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+
+    try:
+        data = request.json
+        if not data or 'topic' not in data:
+            return jsonify({
+                "success": False,
+                "error": "Missing 'topics' in JSON body"
+            }), 400
+        
+        topics = data['topic']
+        
+        # Convert single topic to list if needed
+        if isinstance(topics, str):
+            topics = [topics]
+        
+        if not isinstance(topics, list) or not topics:
+            return jsonify({
+                "success": False,
+                "error": "'topics' must be a non-empty list"
+            }), 400
+        
+        result = {}
+        for topic in topics:
+            video_urls = search_youtube_videos(topic, max_results=3)
+            valid_urls = [url for url in video_urls if is_valid_youtube_url(url)]
+            result[topic] = valid_urls[:3]
+        
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "error": "Invalid JSON format"
+        }), 400
+    except Exception as e:
+        print(f"Server error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
