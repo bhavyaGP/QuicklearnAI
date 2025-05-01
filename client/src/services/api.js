@@ -700,3 +700,30 @@ export const questionBankService = {
     }
   }
 };
+
+export const youtubeService = {
+  getVideoRecommendations: async (topics) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_GEN_PROXY}/youtube_videos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: Array.isArray(topics) ? topics : [topics]
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to get video recommendations');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Error getting video recommendations:', error);
+      throw error;
+    }
+  }
+};

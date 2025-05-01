@@ -35,6 +35,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import QuestionBankGenerator from './components/QuestionBankGenerator'
+import AIChat from './pages/AIChat'
 
 function Home() {
   const contentRef = useRef()
@@ -179,6 +180,7 @@ function App() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/question-bank" element={<QuestionBankGenerator />} />
+          <Route path="/ai-chat" element={<AIChat />} />
         </Routes>
 
         {showLoginModal && (

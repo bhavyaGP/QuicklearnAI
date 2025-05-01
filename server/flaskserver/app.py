@@ -54,6 +54,7 @@ from reportlab.lib.units import inch
 from agno.agent import Agent
 from agno.models.groq import Groq
 from agno.tools.duckduckgo import DuckDuckGoTools
+import requests
 
 app = Flask(__name__)
 SECRET_KEY = "quick" 
@@ -86,6 +87,7 @@ groq_model = ChatGroq(
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
+os.environ["SERPER_API_KEY"] = "85a684d9cfcddab4886460954ef36f054053529b"
 
 def get_and_enhance_transcript(youtube_url, model_type='gemini'):
     try:
@@ -1179,6 +1181,80 @@ def generate_question_bank():
     
     except Exception as e:
         return jsonify({"error": f"Server error: {str(e)}"}), 500
+    
+def search_youtube_videos(topic, max_results=3):
+    url = "https://google.serper.dev/videos"
+    payload = {"q": f"{topic} tutorial"}
+    headers = {
+        "X-API-KEY": os.environ["SERPER_API_KEY"],
+        "Content-Type": "application/json"
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "videos" not in data:
+            return []
+        
+        # Extract up to max_results URLs
+        urls = [video.get("link", "") for video in data.get("videos", [])[:max_results]]
+        return urls
+    except requests.RequestException as e:
+        print(f"Serper API error for {topic}: {e}")
+        return []
+
+def is_valid_youtube_url(url):
+    pattern = r'^(https?://(www\.)?youtube\.com/watch\?v=[\w-]{11}|https?://youtu\.be/[\w-]{11})'
+    return bool(re.match(pattern, url))
+
+@app.route('/youtube_videos', methods=['POST', 'OPTIONS'])
+def youtube_videos():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+
+    try:
+        data = request.json
+        if not data or 'topic' not in data:
+            return jsonify({
+                "success": False,
+                "error": "Missing 'topics' in JSON body"
+            }), 400
+        
+        topics = data['topic']
+        
+        # Convert single topic to list if needed
+        if isinstance(topics, str):
+            topics = [topics]
+        
+        if not isinstance(topics, list) or not topics:
+            return jsonify({
+                "success": False,
+                "error": "'topics' must be a non-empty list"
+            }), 400
+        
+        result = {}
+        for topic in topics:
+            video_urls = search_youtube_videos(topic, max_results=3)
+            valid_urls = [url for url in video_urls if is_valid_youtube_url(url)]
+            result[topic] = valid_urls[:3]
+        
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "error": "Invalid JSON format"
+        }), 400
+    except Exception as e:
+        print(f"Server error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

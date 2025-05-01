@@ -193,27 +193,49 @@ io.on("connection", (socket) => {
     });
 
     // Submit Answer
-    socket.on("submit_answer", ({ roomId, userId, question, selectedOption }) => {
+    socket.on("submit_answer", ({ roomId, userId, question, selectedOption, points }) => {
         const room = quizRooms.get(roomId);
         if (!room) return;
 
-        // Initialize answers tracking if it doesn't exist
+        // Initialize answers and points tracking if they don't exist
         if (!room.answers) {
             room.answers = {};
+        }
+        if (!room.points) {
+            room.points = {};
         }
         if (!room.answers[userId]) {
             room.answers[userId] = 0;
         }
+        if (!room.points[userId]) {
+            room.points[userId] = 0;
+        }
         
-        // Increment answer count for this student
+        // Increment answer count and update points for this student
         room.answers[userId]++;
+        room.points[userId] = points;
 
         if (selectedOption === question.answer) {
             room.scores[userId] = (room.scores[userId] || 0) + 1;
         }
 
-        // Emit updated scores to all users in the room
-        io.to(roomId).emit("update_scores", { scores: room.scores });
+        // Calculate rankings based on points
+        const rankings = Object.entries(room.points)
+            .sort(([, a], [, b]) => b - a)
+            .reduce((acc, [id], index) => {
+                acc[id] = index + 1;
+                return acc;
+            }, {});
+
+        // Emit updated scores and rankings to teacher only
+        const teacherSocketId = room.socketIds[room.teacher];
+        if (teacherSocketId) {
+            io.to(teacherSocketId).emit("update_scores", { 
+                scores: room.scores,
+                points: room.points,
+                rankings
+            });
+        }
 
         // Get total questions count from the question object
         const totalQuestions = question.totalQuestions || 0;
@@ -224,10 +246,75 @@ io.on("connection", (socket) => {
         });
 
         if (allCompleted) {
-            io.to(roomId).emit("final_scores", { 
+            // Store final results in Redis with points
+            const resultData = {
+                roomId,
+                students: room.students,
                 scores: room.scores,
+                points: room.points,
+                rankings,
+                endedAt: new Date().toISOString(),
+                published: false
+            };
+
+            redis.set(roomId, JSON.stringify(resultData), "EX", 3600); // Store for 1 hour
+
+            // Notify teacher that quiz is complete and ready to publish
+            if (teacherSocketId) {
+                io.to(teacherSocketId).emit("quiz_completed", { 
+                    scores: room.scores,
+                    points: room.points,
+                    rankings,
+                    studentNames: room.studentNames
+                });
+            }
+
+            // Notify students that quiz is complete and waiting for results
+            room.students.forEach(studentId => {
+                const studentSocketId = room.socketIds[studentId];
+                if (studentSocketId) {
+                    io.to(studentSocketId).emit("waiting_for_results");
+                }
+            });
+        }
+    });
+
+    // New event handler for publishing results
+    socket.on("publish_results", async ({ roomId, teacherId }) => {
+        try {
+            const room = quizRooms.get(roomId);
+            if (!room || room.teacher !== teacherId) {
+                socket.emit("error", { message: "Unauthorized to publish results" });
+                return;
+            }
+
+            // Get stored results from Redis
+            const resultData = await redis.get(roomId);
+            if (!resultData) {
+                socket.emit("error", { message: "Results not found" });
+                return;
+            }
+
+            const results = JSON.parse(resultData);
+            results.published = true;
+            await redis.set(roomId, JSON.stringify(results), "EX", 3600);
+
+            // Emit final scores to all users in the room
+            io.to(roomId).emit("results_published", { 
+                scores: room.scores,
+                points: room.points,
+                rankings: results.rankings,
                 studentNames: room.studentNames
             });
+
+            // Clean up room after a delay
+            setTimeout(() => {
+                quizRooms.delete(roomId);
+            }, 5000);
+
+        } catch (error) {
+            console.error("Error publishing results:", error);
+            socket.emit("error", { message: "Failed to publish results" });
         }
     });
 

@@ -1,7 +1,9 @@
 import { PaperAirplaneIcon, MicrophoneIcon } from '@heroicons/react/24/outline'
 import { useState, useEffect } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 
 function SearchBar() {
+  const navigate = useNavigate()
   const [isListening, setIsListening] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -10,7 +12,7 @@ function SearchBar() {
   // Placeholder text animation
   const placeholders = [
     "Describe Earth to aliens",
-    "Explain quantum computing",
+    "Explain quantum computing", 
     "Summarize the theory of relativity",
     "How does photosynthesis work?"
   ]
@@ -29,6 +31,10 @@ function SearchBar() {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     })
+  }
+
+  const handleClick = () => {
+    navigate('/ai-chat')
   }
 
   return (
@@ -59,8 +65,9 @@ function SearchBar() {
               setIsTyping(true)
               setTimeout(() => setIsTyping(false), 100)
             }}
+            onClick={handleClick}
             placeholder={placeholders[currentPlaceholder]}
-            className="flex-1 bg-transparent border-none outline-none text-gray-300 placeholder-gray-500"
+            className="flex-1 bg-transparent border-none outline-none text-gray-300 placeholder-gray-500 cursor-pointer"
           />
         </div>
         <div className="flex items-center space-x-2">
@@ -74,7 +81,10 @@ function SearchBar() {
           >
             <MicrophoneIcon className={`w-5 h-5 ${isListening ? 'animate-pulse' : ''}`} />
           </button>
-          <button className="p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group hover:scale-110">
+          <button 
+            onClick={handleClick}
+            className="p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group hover:scale-110"
+          >
             <PaperAirplaneIcon className="w-5 h-5 text-gray-400 group-hover:text-[#00FF9D] transition-colors" />
           </button>
         </div>
