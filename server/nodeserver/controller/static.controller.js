@@ -10,7 +10,7 @@ async function handlelogin(req, res) {
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
     }
-    console.log(email, password, role);
+    // console.log(email, password, role);
     try {
         let user;
         if (role === 'student') {
@@ -28,6 +28,14 @@ async function handlelogin(req, res) {
             user = await teacher.findOne({ email });
             if (user == null || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
+            }
+            
+            // Check if teacher account is approved
+            if (user.approvalStatus !== 'approved') {
+                return res.status(403).json({ 
+                    message: 'Your account is pending approval by admin',
+                    approvalStatus: user.approvalStatus
+                });
             }
 
             user.isOnline = true;
@@ -169,7 +177,29 @@ async function handleregister(req, res) {
                 return res.status(400).json({ message: 'Teacher already exists' });
             }
 
-            // Create new teacher with required fields
+            // Process subject data to ensure correct format
+            let formattedSubjects = [];
+            if (subject) {
+                // Handle different ways subject might be provided
+                if (Array.isArray(subject)) {
+                    formattedSubjects = subject.map(sub => {
+                        // If already in correct object format
+                        if (typeof sub === 'object' && sub.field && sub.subcategory) {
+                            return sub;
+                        }
+                        // If it's a string, format it properly
+                        return { field: sub, subcategory: '' };
+                    });
+                } else if (typeof subject === 'object' && subject.field) {
+                    // Single object with correct structure
+                    formattedSubjects = [subject];
+                } else if (typeof subject === 'string') {
+                    // Single string value
+                    formattedSubjects = [{ field: subject, subcategory: '' }];
+                }
+            }
+
+            // Create new teacher with required fields and proper subject format
             newUser = await teacher.create({
                 email,
                 password: password || '', // Required for teachers
@@ -178,14 +208,28 @@ async function handleregister(req, res) {
                 phone: phone || '',
                 highestQualification: highestQualification || '',
                 experience: experience || 0,
-                subject: subject ? (Array.isArray(subject) ? subject : [subject]) : [],
-                certification: certification ? (Array.isArray(certification) ? certification : [certification]) : []
+                subject: formattedSubjects,
+                certification: certification ? (Array.isArray(certification) ? certification : [certification]) : [],
+                approvalStatus: 'pending'
+            });
+            
+            // For teachers, don't generate token - they need admin approval first
+            return res.status(201).json({
+                message: 'Teacher registration submitted successfully. Your account is pending admin approval.',
+                user: {
+                    _id: newUser._id,
+                    email: newUser.email,
+                    username: newUser.username,
+                    avatar: newUser.avatar,
+                    role,
+                    approvalStatus: 'pending'
+                }
             });
         } else {
             return res.status(400).json({ message: 'Invalid role' });
         }
 
-        // Generate JWT token
+        // Generate JWT token - only for students and admins
         const token = jwt.sign(
             { id: newUser._id, role, email: newUser.email },
             process.env.JWT_SECRET,

@@ -60,6 +60,11 @@ const teacherSchema = new mongoose.Schema({
         type: Boolean,
         default: false 
     },
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
     availability: [
         {
             day: String, 
@@ -71,6 +76,7 @@ const teacherSchema = new mongoose.Schema({
 
 // Index for faster queries
 teacherSchema.index({ "subject.field": 1, "subject.subcategory": 1 });
+teacherSchema.index({ "approvalStatus": 1 });
 
 const Teacher = mongoose.model('Teacher', teacherSchema);
 module.exports = Teacher;
@@ -102,6 +108,7 @@ module.exports = Teacher;
 //     "rating": 4.8,
 //     "doubtsSolved": 156,
 //     "isOnline": true,
+//     "approvalStatus": "approved",
 //     "availability": [
 //       {
 //         "day": "Monday",
@@ -117,4 +124,3 @@ module.exports = Teacher;
 //     "createdAt": "2025-02-01T10:00:00.000Z",
 //     "updatedAt": "2025-02-01T14:30:00.000Z"
 //   }
-  
