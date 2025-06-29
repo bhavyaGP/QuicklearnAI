@@ -98,7 +98,7 @@ def get_and_enhance_transcript(youtube_url, model_type='gemini'):
         # Fetch transcript
         for lang in ['hi', 'en']:
             try:
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
+                transcript = YouTubeTranscriptApi().fetch(video_id, languages=[lang])
                 language = lang
                 break
             except:
