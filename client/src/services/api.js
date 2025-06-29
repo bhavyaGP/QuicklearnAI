@@ -537,7 +537,7 @@ export const paperService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY_URL}/gen/paper_upload`, formData, {
+      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY}/paper_upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -551,7 +551,7 @@ export const paperService = {
 
   generatePaper: async (filePath, numQuestions, numPapers) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY_URL}/gen/generate_paper`, {
+      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY}/generate_paper`, {
         file_path: filePath,
         num_questions: numQuestions,
         num_papers: numPapers
@@ -726,4 +726,136 @@ export const youtubeService = {
       throw error;
     }
   }
+};
+
+export const adminService = {
+    // Create an axios instance for admin requests
+    api: axios.create({
+        baseURL: import.meta.env.VITE_API_URL,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        withCredentials: true
+    }),
+
+    // Method to get all orders
+    getOrders: async () => {
+        try {
+            // Get the auth token from localStorage
+            const userInfo = localStorage.getItem('user-info');
+            if (!userInfo) {
+                throw new Error('User not authenticated');
+            }
+            const { token } = JSON.parse(userInfo);
+
+            const response = await axios.get(`${import.meta.env.VITE_PROXY_API_URL}/user/admin/orders`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to fetch orders');
+            } else if (error.request) {
+                throw new Error('No response from server');
+            } else {
+                throw new Error('Error setting up request');
+            }
+        }
+    },
+
+    // Add this new method
+    getOrderStats: async () => {
+        try {
+            const userInfo = localStorage.getItem('user-info');
+            if (!userInfo) {
+                throw new Error('User not authenticated');
+            }
+            const { token } = JSON.parse(userInfo);
+
+            const response = await axios.get(`${import.meta.env.VITE_PROXY_API_URL}/user/admin/orders/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching order stats:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to fetch order statistics');
+            } else if (error.request) {
+                throw new Error('No response from server');
+            } else {
+                throw new Error('Error setting up request');
+            }
+        }
+    },
+
+    // Add this new method for pending teachers
+    getPendingTeachers: async () => {
+        try {
+            const userInfo = localStorage.getItem('user-info');
+            if (!userInfo) {
+                throw new Error('User not authenticated');
+            }
+            const { token } = JSON.parse(userInfo);
+
+            const response = await axios.get(`${import.meta.env.VITE_PROXY_API_URL}/user/admin/teachers/pending`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching pending teachers:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to fetch pending teachers');
+            } else if (error.request) {
+                throw new Error('No response from server');
+            } else {
+                throw new Error('Error setting up request');
+            }
+        }
+    },
+
+    handleTeacherRequest: async (teacherId, action, reason) => {
+        try {
+            const userInfo = localStorage.getItem('user-info');
+            if (!userInfo) {
+                throw new Error('User not authenticated');
+            }
+            const { token } = JSON.parse(userInfo);
+
+            const response = await axios.post(
+                `${import.meta.env.VITE_PROXY_API_URL}/user/admin/teachers/handle-request`,
+                {
+                    teacherId,
+                    action, // 'approve' or 'reject'
+                    reason
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            console.error('Error handling teacher request:', error);
+            if (error.response) {
+                throw new Error(error.response.data.message || 'Failed to process teacher request');
+            } else if (error.request) {
+                throw new Error('No response from server');
+            } else {
+                throw new Error('Error setting up request');
+            }
+        }
+    }
 };
