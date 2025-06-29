@@ -81,7 +81,6 @@ google_api_key = os.getenv("GENAI_API_KEY")
 genai.configure(api_key=google_api_key)
 gemini_model = genai.GenerativeModel('gemini-2.0-flash')  # Use the correct model name
 
-# groq_api_key = "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"
 groq_model = ChatGroq(
     model="llama-3.1-8b-instant",
     temperature=0,
