@@ -202,7 +202,7 @@ async function handleregister(req, res) {
             // Create new teacher with required fields and proper subject format
             newUser = await teacher.create({
                 email,
-                password: password || '', // Required for teachers
+                password: password || '1234', // Required for teachers
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}`,
                 username,
                 phone: phone || '',
