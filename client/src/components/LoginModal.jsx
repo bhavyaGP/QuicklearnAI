@@ -27,7 +27,7 @@ const LoginModalContent = ({ isOpen, onClose, onSignUpClick }) => {
     if(email === 'iamquicklearn.ai@gmail.com' && password === 'Quicklearn@123'){
       data.role = 'admin';
     }
-
+console.log(data);
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/login`, data, {
         headers: {

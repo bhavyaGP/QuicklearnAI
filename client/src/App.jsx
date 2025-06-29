@@ -29,7 +29,7 @@ import PrivateRoute from './components/PrivateRoute'
 import YouTubeChat from './pages/YouTubeChat'
 import QuestionPaperGenerator from './pages/QuestionPaperGenerator'
 import Subscription from './components/Subscription'
-import AdminDashboard from './components/AdminDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PrivacyPolicy from './pages/PrivacyPolicy'
@@ -126,14 +126,15 @@ function App() {
             }
           />
           <Route
-            path="/profile"
+            path="/admin"
             element={
               <PrivateRoute
-                element={<ProfilePage />}
-                allowedRoles={['student', 'teacher']}
+                element={<AdminDashboard />}
+                allowedRoles={['admin']}
               />
             }
           />
+         
           <Route path="/quiz" element={<QuizGenerator />} />
           <Route path="/chatbot" element={<ChatBot />} />
           <Route path="/recommendations" element={<RecommendationPage />} />
@@ -142,7 +143,14 @@ function App() {
           <Route path="/doubt/:doubtId/chat" element={<ChatRoom />} />
           <Route path="/doubt/:doubtId/matched" element={<MatchedTeachers />} />
           <Route path="/subscription" element={<Subscription/>} />
-          <Route path="/admin" element={<AdminDashboard/>} />
+          <Route
+            path="/admin" 
+            element={
+                <PrivateRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                </PrivateRoute>
+            } 
+          />
           <Route
             path="/create-quiz"
             element={

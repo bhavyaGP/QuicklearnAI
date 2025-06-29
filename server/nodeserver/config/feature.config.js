@@ -28,21 +28,21 @@ const config = {
             quiz: {
                 rateLimit: 5, // requests per minute
                 maxQuestions: 20,
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // Chatbot interactions
             chatbot: {
                 rateLimit: 20, // requests per minute
                 maxTokens: 2000,
-                aiModels: ['gemini-1.5-flash', 'llama-3.3-70b-versatile'],
+                aiModels: ['gemini-1.5-flash', 'llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // Mind map generation
             mindmap: {
                 rateLimit: 5, // requests per minute
                 processingTime: 45, // seconds
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // AI-powered doubt solving
@@ -60,7 +60,7 @@ const config = {
             // Recommendations
             recommendations: {
                 rateLimit: 10, // requests per minute
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             }
         }
@@ -90,21 +90,21 @@ const config = {
             quiz: {
                 rateLimit: 3, // requests per minute
                 maxQuestions: 15,
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // Chatbot interactions
             chatbot: {
                 rateLimit: 15, // requests per minute
                 maxTokens: 2000,
-                aiModels: ['gemini-1.5-flash', 'llama-3.3-70b-versatile'],
+                aiModels: ['gemini-1.5-flash', 'llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // Mind map generation
             mindmap: {
                 rateLimit: 3, // requests per minute
                 processingTime: 45, // seconds
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             },
             // AI-powered doubt solving
@@ -122,7 +122,7 @@ const config = {
             // Recommendations
             recommendations: {
                 rateLimit: 5, // requests per minute
-                aiModels: ['llama-3.3-70b-versatile'],
+                aiModels: ['llama-3.1-8b-instant'],
                 requiresAuth: true
             }
         }
