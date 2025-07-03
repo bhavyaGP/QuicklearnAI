@@ -92,8 +92,9 @@ const MindMapContent = () => {
       const decodedUrl = decodeURIComponent(videoUrl);
       console.log("Making API call with URL:", decodedUrl);
 
-      const response = await axios.get(
-        `http://127.0.0.1:5001/generate_mind_map?video_url=${videoUrl}`
+      const response = await axios.post(
+        `http://127.0.0.1:5001/api/generate_mind_map`,
+        { video_url: decodedUrl }
       );
 
       // Extract the JSON string from the error message

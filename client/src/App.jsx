@@ -195,6 +195,10 @@ function App() {
           <LoginModal
             isOpen={showLoginModal}
             onClose={() => setShowLoginModal(false)}
+            onSignUpClick={() => {
+              setShowLoginModal(false);
+              setShowSignUpModal(true);
+            }}
           />
         )}
         {showSignUpModal && (

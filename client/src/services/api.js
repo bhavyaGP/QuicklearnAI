@@ -44,7 +44,7 @@ api2.interceptors.request.use(
 export const summaryService = {
   generateSummary: async (link) => {
     try {
-      const response = await api.post('/quiz', {
+      const response = await api2.post('/gen/api/quiz', {
         link,
         qno: 1,  // Default minimum questions since we only need summary
         difficulty: 'easy'  // Default difficulty
@@ -75,7 +75,7 @@ export const summaryService = {
 export const quizService = {
   generateQuiz: async (link, qno, difficulty, model) => {
     try {
-      const response = await api.post('/quiz', {
+      const response = await api2.post('/gen/api/quiz', {
         link,
         qno,
         difficulty,
@@ -173,7 +173,7 @@ export const recommendationService = {
       }
 
       // Use api2 instance with the correct endpoint
-      const response = await api2.get('/gen/getonly', {
+      const response = await api2.get('/gen/api/getonly', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Cookie': `authtoken=${token}`
@@ -215,7 +215,7 @@ export const documentService = {
       }
 
       // Make request using api2 instance (which points to localhost:3000)
-      const response = await api2.post('/gen/upload', formData, {
+      const response = await api.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': token ? `Bearer ${token}` : '',
@@ -237,7 +237,7 @@ export const documentService = {
   
   queryDocument: async (query) => {
     try {
-      const response = await api2.post('/gen/query', {
+      const response = await api.post('/api/query', {
         query: query
       }, {
         headers: {
@@ -537,7 +537,7 @@ export const paperService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY}/paper_upload`, formData, {
+      const response = await api.post(`/api/paper_upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -551,7 +551,7 @@ export const paperService = {
 
   generatePaper: async (filePath, numQuestions, numPapers) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_GEN_PROXY}/generate_paper`, {
+      const response = await api.post(`/api/generate_paper`, {
         file_path: filePath,
         num_questions: numQuestions,
         num_papers: numPapers
@@ -567,9 +567,13 @@ export const paperService = {
     }
   },
 
-  downloadPaper: async (paperUrl) => {
+  downloadPaper: async (paper) => {
     try {
-      const response = await axios.get(paperUrl, {
+      // Use the full file path from the paper object to download directly
+      const response = await api.get(`/api/download/${paper.path}`, {
+        params: {
+          file_path: paper.path
+        },
         responseType: 'blob'
       });
       return response.data;
@@ -673,7 +677,7 @@ export const paymentService = {
 export const questionBankService = {
   generateQuestionBank: async (topic) => {
     try {
-      const response = await api.post('/question_bank', 
+      const response = await api.post('/api/question_bank', 
         { topic },
         { 
           responseType: 'blob',
@@ -704,26 +708,25 @@ export const questionBankService = {
 export const youtubeService = {
   getVideoRecommendations: async (topics) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_GEN_PROXY}/youtube_videos`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic: Array.isArray(topics) ? topics : [topics]
-        }),
+      const response = await api.post(`/api/youtube_videos`, {
+        topic: Array.isArray(topics) ? topics : [topics]
       });
-
-      const data = await response.json();
+      print("the array is: ",topics)
       
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to get video recommendations');
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.error || 'Failed to get video recommendations');
       }
 
-      return data.data;
+      return response.data.data;
     } catch (error) {
       console.error('Error getting video recommendations:', error);
-      throw error;
+      if (error.response) {
+        throw new Error(error.response.data.error || 'Failed to get video recommendations');
+      } else if (error.request) {
+        throw new Error('No response received from server');
+      } else {
+        throw error;
+      }
     }
   }
 };

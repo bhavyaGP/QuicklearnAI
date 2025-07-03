@@ -10,10 +10,13 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   const [activeTab, setActiveTab] = useState('student');
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showApprovalMessage, setShowApprovalMessage] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
@@ -30,22 +33,21 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         withCredentials: true
       });
 
-      // Store user info in localStorage
-      localStorage.setItem('user-info', JSON.stringify(response.data));
-      
-      // Close modal and redirect
-      onClose();
       if (activeTab === 'teacher') {
-        navigate('/teacher-dashboard');
+        // For teachers, show approval message instead of redirecting
+        setShowApprovalMessage(true);
+        setIsLoading(false);
       } else {
+        // For students, store user info and redirect
+        localStorage.setItem('user-info', JSON.stringify(response.data));
+        onClose();
         navigate('/dashboard');
+        window.location.reload();
       }
-      
-      // Trigger page reload to update UI
-      window.location.reload();
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed');
       console.error('Registration error:', error);
+      setIsLoading(false);
     }
   };
 
@@ -58,18 +60,51 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
-      {error && (
-        <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
-          {error}
+      {showApprovalMessage ? (
+        <div className="text-center py-8">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-[#00FF9D]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#00FF9D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-[#00FF9D] mb-2">
+              Registration Submitted!
+            </h2>
+            <p className="text-gray-400 mb-4">
+              Your teacher registration has been submitted successfully.
+            </p>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <p className="text-yellow-400 text-sm">
+                <strong>⏳ Pending Approval:</strong> Your account is currently under review by our admin team. 
+                You'll receive an email notification once your account is approved and you can start using the platform.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setShowApprovalMessage(false);
+              onClose();
+            }}
+            className="px-6 py-2 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 rounded-lg transition-all duration-200 font-medium"
+          >
+            Got it!
+          </button>
         </div>
-      )}
-      
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#00FF9D]">
-          Join QuickLearnAI
-        </h2>
-        <p className="text-gray-400 mt-2">Start your learning journey today</p>
-      </div>
+      ) : (
+        <>
+          {error && (
+            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+          
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-[#00FF9D]">
+              Join QuickLearnAI
+            </h2>
+            <p className="text-gray-400 mt-2">Start your learning journey today</p>
+          </div>
 
       <Tabs value={activeTab} onChange={setActiveTab}>
         <TabsList className="bg-red/50 p-1 rounded-lg mb-6">
@@ -160,9 +195,17 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign Up as Student
+              {isLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-[#00FF9D] border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing Up...</span>
+                </div>
+              ) : (
+                'Sign Up as Student'
+              )}
             </button>
           </form>
         </TabContent>
@@ -295,9 +338,17 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign Up as Teacher
+              {isLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-[#00FF9D] border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing Up...</span>
+                </div>
+              ) : (
+                'Sign Up as Teacher'
+              )}
             </button>
           </form>
         </TabContent>
@@ -312,6 +363,8 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
           Log in
         </button>
       </div>
+      </>
+      )}
     </Dialog>
   );
 };
