@@ -53,13 +53,8 @@ const QuestionPaperGenerator = () => {
       const response = await paperService.generatePaper(filePath, numQuestions, numPapers);
       setCurrentStep(3);
       
-      // Generate paper URLs based on the response
-      const papers = [];
-      for (let i = 1; i <= numPapers; i++) {
-        const paperUrl = `${import.meta.env.GEN_PROXY}/download/question_paper_set_${i}.pdf`;
-        papers.push(paperUrl);
-      }
-      setGeneratedPapers(papers);
+      // Use the generated_files array from the API response
+      setGeneratedPapers(response.generated_files || []);
     } catch (err) {
       setError('Failed to generate papers. Please try again.');
       console.error('Generation error:', err);
@@ -68,16 +63,17 @@ const QuestionPaperGenerator = () => {
     }
   };
 
-  const handleDownload = async (url) => {
+  const handleDownload = async (paper) => {
     try {
-      const blob = await paperService.downloadPaper(url);
+      const blob = await paperService.downloadPaper(paper);
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `question_paper_${Date.now()}.pdf`;
+      link.download = paper.filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       setError('Failed to download paper. Please try again.');
       console.error('Download error:', err);
@@ -335,25 +331,25 @@ const QuestionPaperGenerator = () => {
               </div>
               
               <div className="grid gap-4">
-                {generatedPapers.map((url, index) => (
+                {generatedPapers.map((paper, index) => (
                   <div
                     key={index}
                     className="group flex items-center justify-between p-6 rounded-xl border border-white/10 bg-black/20 hover:bg-[#00FF9D]/5 hover:border-[#00FF9D]/30 transition-all duration-300"
                   >
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-full bg-[#00FF9D]/10 flex items-center justify-center">
-                        <span className="text-[#00FF9D] font-medium">{index + 1}</span>
+                        <span className="text-[#00FF9D] font-medium">{paper.set_number}</span>
                       </div>
                       <div>
                         <h4 className="text-lg font-medium text-white group-hover:text-[#00FF9D] transition-colors duration-300">
-                          Question Paper Set {index + 1}
+                          Question Paper Set {paper.set_number}
                         </h4>
                         <p className="text-sm text-gray-400">Ready for download</p>
                       </div>
                     </div>
                     
                     <Button
-                      onClick={() => handleDownload(url)}
+                      onClick={() => handleDownload(paper)}
                       className="relative overflow-hidden px-6 py-2 bg-[#00FF9D]/10 border border-[#00FF9D]/30 text-[#00FF9D] hover:bg-[#00FF9D]/20 hover:border-[#00FF9D]/50 transition-all duration-300 group"
                     >
                       <span className="flex items-center gap-2">
@@ -379,4 +375,4 @@ const QuestionPaperGenerator = () => {
   );
 };
 
-export default QuestionPaperGenerator; 
+export default QuestionPaperGenerator;
