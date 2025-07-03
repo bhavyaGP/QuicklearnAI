@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -119,20 +119,31 @@ const AdminDashboard = () => {
 
   // Approval Modal Component
   const ApprovalModal = () => {
+    const textareaRef = useRef(null);
+    
+    useEffect(() => {
+      if (showApprovalModal && textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, [showApprovalModal]);
+    
     if (!showApprovalModal) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full mx-4">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
           <h3 className="text-xl font-semibold text-[#00FF9D] mb-4">
             Approve Teacher
           </h3>
           <textarea
+            ref={textareaRef}
             value={approvalReason}
             onChange={(e) => setApprovalReason(e.target.value)}
             placeholder="Enter approval reason..."
             className="w-full p-3 bg-black/50 border border-gray-700 rounded-lg text-white mb-4 focus:outline-none focus:border-[#00FF9D]"
             rows="3"
+            onClick={(e) => e.stopPropagation()}
+            onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
           />
           <div className="flex justify-end space-x-3">
             <button
