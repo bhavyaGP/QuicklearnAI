@@ -113,7 +113,7 @@ async function getCategoryFromGroq(text) {
     try {
         const llm = new ChatGroq({
             apiKey: process.env.GROQ_API_KEY,
-            model: "llama3-8b-8192",
+            model: "llama-3.3-70b-versatile",
             temperature: 0,
             maxRetries: 3,
         });
@@ -133,7 +133,7 @@ Here is the text: ${text}`;
             },
             { role: "user", content: prompt }
         ]);
-
+        
         return aiMsg.content.trim();
     } catch (error) {
         console.error("Error getting category from Groq:", error);

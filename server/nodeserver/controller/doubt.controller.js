@@ -18,17 +18,34 @@ async function matchdoubt(req, res) {
 
         for (const key of teacherKeys) {
             const teacher = await redis.hgetall(key);
-            if (teacher.field === subject && teacher.subcategory === subcategory) {
-                matchedTeachers.push({
-                    _id: key.split(':')[1],
-                    email: teacher.email,
-                    username: teacher.username,
-                    rating: parseFloat(teacher.rating),
-                    doubtsSolved: parseInt(teacher.doubtsSolved),
-                    field: teacher.field,
-                    subcategory: teacher.subcategory,
-                    certification: JSON.parse(teacher.certification)
-                });
+            
+            // Parse teacher's subcategories (assuming it's stored as JSON array)
+            let teacherSubcategories = [];
+            try {
+            teacherSubcategories = teacher.subcategory ? JSON.parse(teacher.subcategory) : [];
+            } catch (e) {
+            // If subcategory is a string, treat it as single subcategory
+            teacherSubcategories = teacher.subcategory ? [teacher.subcategory] : [];
+            }
+            
+            // Check if teacher's field matches and has relevant subcategory
+            const fieldMatch = teacher.field === subject;
+            const subcategoryMatch = teacherSubcategories.some(sub => 
+            sub.toLowerCase().includes(subcategory.toLowerCase()) || 
+            subcategory.toLowerCase().includes(sub.toLowerCase())
+            );
+            
+            if (fieldMatch && subcategoryMatch) {
+            matchedTeachers.push({
+                _id: key.split(':')[1],
+                email: teacher.email,
+                username: teacher.username,
+                rating: parseFloat(teacher.rating),
+                doubtsSolved: parseInt(teacher.doubtsSolved),
+                field: teacher.field,
+                subcategory: teacher.subcategory,
+                certification: JSON.parse(teacher.certification)
+            });
             }
         }
         //find the all teacher by subject and subcategory
