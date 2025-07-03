@@ -45,7 +45,8 @@ async function handlelogin(req, res) {
                 field: sub.field,
                 subcategory: sub.subcategory
             }));
-
+            console.log('field', subjects[0].field, 
+                "subcategory", subjects[0].subcategory)
             redis.hmset(`teacher:${user._id}`, 
                 'email', user.email, 
                 'username', user.username, 
@@ -168,7 +169,8 @@ async function handleregister(req, res) {
             const {
                 highestQualification,
                 experience,
-                subject,
+                field,
+                subcategory,
                 certification
             } = req.body;
 
@@ -179,24 +181,13 @@ async function handleregister(req, res) {
 
             // Process subject data to ensure correct format
             let formattedSubjects = [];
-            if (subject) {
-                // Handle different ways subject might be provided
-                if (Array.isArray(subject)) {
-                    formattedSubjects = subject.map(sub => {
-                        // If already in correct object format
-                        if (typeof sub === 'object' && sub.field && sub.subcategory) {
-                            return sub;
-                        }
-                        // If it's a string, format it properly
-                        return { field: sub, subcategory: '' };
-                    });
-                } else if (typeof subject === 'object' && subject.field) {
-                    // Single object with correct structure
-                    formattedSubjects = [subject];
-                } else if (typeof subject === 'string') {
-                    // Single string value
-                    formattedSubjects = [{ field: subject, subcategory: '' }];
-                }
+            if (field) {
+                // Create subject object with field and subcategory array
+                const subjectObject = {
+                    field: field,
+                    subcategory: Array.isArray(subcategory) ? subcategory : (subcategory ? [subcategory] : [])
+                };
+                formattedSubjects = [subjectObject];
             }
 
             // Create new teacher with required fields and proper subject format
@@ -222,6 +213,7 @@ async function handleregister(req, res) {
                     username: newUser.username,
                     avatar: newUser.avatar,
                     role,
+                    subject: formattedSubjects,
                     approvalStatus: 'pending'
                 }
             });
