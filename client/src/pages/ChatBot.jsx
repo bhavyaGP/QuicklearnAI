@@ -110,10 +110,13 @@ const ChatBot = () => {
     }
   }, []);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
+       if (selectedFile) {
+        await handleFileUpload(selectedFile);
+      }
       // Clear chat history when new file is selected
       setChat([]);
     }
@@ -143,7 +146,7 @@ const ChatBot = () => {
       throw error;
     }
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!question.trim()) return;
@@ -154,9 +157,7 @@ const ChatBot = () => {
     
     try {
       // Upload file if present and not already uploaded
-      if (file) {
-        await handleFileUpload(file);
-      }
+     
       
       // Send query to get response
       const response = await documentService.queryDocument(question);
