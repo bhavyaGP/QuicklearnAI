@@ -8,8 +8,8 @@ import ReactFlow, {
 import axios from "axios";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const getNodeStyle = (type) => ({
   padding: "20px",
@@ -76,10 +76,15 @@ const MindMapContent = () => {
   const [edges, setEdges] = useState([]);
   const [loading, setLoading] = useState(false);
   const { fitView, setViewport } = useReactFlow();
+  const navigate = useNavigate();
   
   // Get URL directly from window.location
   const urlParams = new URLSearchParams(window.location.search);
   const videoUrl = urlParams.get('url');
+
+  const handleBackToQuiz = () => {
+    navigate('/quiz');
+  };
 
   const fetchMindMap = async () => {
     try {
@@ -227,7 +232,16 @@ const MindMapContent = () => {
         </div>
 
         <Card className="bg-black/40 backdrop-blur-md border border-white/10 p-6">
-          <div className="flex justify-center">
+          <div className="flex justify-between items-center mb-4">
+            <Button
+              onClick={handleBackToQuiz}
+              variant="outline"
+              className="flex items-center gap-2 bg-black/50 border-white/20 text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Quiz
+            </Button>
+            
             <Button
               onClick={fetchMindMap}
               disabled={loading}
@@ -283,4 +297,4 @@ const MindMap = () => {
   );
 };
 
-export default MindMap;
+export default MindMap;``
