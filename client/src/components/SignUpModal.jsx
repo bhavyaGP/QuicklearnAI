@@ -12,6 +12,57 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showApprovalMessage, setShowApprovalMessage] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState('');
+
+  // Define subcategories for each subject
+  const subcategories = {
+    mathematics: [
+      { value: "algebra", label: "Algebra" },
+      { value: "calculus", label: "Calculus" },
+      { value: "geometry", label: "Geometry" },
+      { value: "statistics", label: "Statistics" },
+      { value: "discrete_math", label: "Discrete Mathematics" },
+    ],
+    physics: [
+      { value: "mechanics", label: "Mechanics" },
+      { value: "thermodynamics", label: "Thermodynamics" },
+      { value: "electromagnetism", label: "Electromagnetism" },
+      { value: "quantum_physics", label: "Quantum Physics" },
+      { value: "relativity", label: "Relativity" },
+    ],
+    chemistry: [
+      { value: "organic_chem", label: "Organic Chemistry" },
+      { value: "inorganic_chem", label: "Inorganic Chemistry" },
+      { value: "physical_chem", label: "Physical Chemistry" },
+      { value: "biochemistry", label: "Biochemistry" },
+      { value: "analytical_chem", label: "Analytical Chemistry" },
+    ],
+    biology: [
+      { value: "molecular_bio", label: "Molecular Biology" },
+      { value: "genetics", label: "Genetics" },
+      { value: "ecology", label: "Ecology" },
+      { value: "physiology", label: "Physiology" },
+      { value: "microbiology", label: "Microbiology" },
+    ],
+    computer_science: [
+      { value: "programming", label: "Programming" },
+      { value: "data_structures", label: "Data Structures & Algorithms" },
+      { value: "databases", label: "Databases" },
+      { value: "web_dev", label: "Web Development" },
+      { value: "ai_ml", label: "AI & Machine Learning" },
+      { value: "networking", label: "Computer Networking" },
+    ],
+    english: [
+      { value: "literature", label: "Literature" },
+      { value: "grammar", label: "Grammar" },
+      { value: "composition", label: "Composition & Writing" },
+      { value: "language_arts", label: "Language Arts" },
+      { value: "public_speaking", label: "Public Speaking" },
+    ],
+    other: [
+      { value: "other_specify", label: "Please Specify in Profile" },
+    ],
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -211,69 +262,153 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
         </TabContent>
 
         <TabContent value="teacher" selected={activeTab === 'teacher'}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Teacher Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="username"
-                placeholder="Dr. Jane Smith"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Grid Layout for Teacher Form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Teacher Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Dr. Jane Smith"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                />
+              </div>
+
+              {/* Teacher Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="teacher@example.com"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                />
+              </div>
+
+              {/* Teacher Mobile */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Mobile Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="1234567890"
+                  pattern="[0-9]{10}"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                />
+              </div>
+
+              {/* Highest Qualification */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Highest Qualification
+                </label>
+                <select
+                  name="highestQualification"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                >
+                  <option value="">Select Qualification</option>
+                  <option value="bachelors">Bachelor's Degree</option>
+                  <option value="masters">Master's Degree</option>
+                  <option value="phd">Ph.D.</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Teaching Experience */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Teaching Experience (Years)
+                </label>
+                <input
+                  type="number"
+                  name="experience"
+                  min="0"
+                  max="50"
+                  placeholder="5"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                />
+              </div>
             </div>
 
-            {/* Teacher Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="teacher@example.com"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              />
+            {/* Subject and Subcategory Selection (Full Width) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Preferred Subject */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Preferred Subject
+                </label>
+                <select
+                  name="subject"
+                  value={selectedSubject}
+                  onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                >
+                  <option value="">Select Subject</option>
+                  <option value="mathematics">Mathematics</option>
+                  <option value="physics">Physics</option>
+                  <option value="chemistry">Chemistry</option>
+                  <option value="biology">Biology</option>
+                  <option value="computer_science">Computer Science</option>
+                  <option value="english">English</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Subject Subcategory - Dynamic based on selected subject */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Subcategory
+                </label>
+                <select
+                  name="subcategory"
+                  className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
+                  required
+                  disabled={!selectedSubject}
+                >
+                  <option value="">
+                    {selectedSubject 
+                      ? `Select ${selectedSubject.charAt(0).toUpperCase() + selectedSubject.slice(1).replace('_', ' ')} Subcategory`
+                      : 'Select Subject First'
+                    }
+                  </option>
+                  {selectedSubject && subcategories[selectedSubject]?.map((subcat, idx) => (
+                    <option key={idx} value={subcat.value}>
+                      {subcat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Teacher Mobile */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Mobile Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                placeholder="1234567890"
-                pattern="[0-9]{10}"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              />
-            </div>
-
-            {/* Highest Qualification */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Highest Qualification
-              </label>
-              <select
-                name="highestQualification"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              >
-                <option value="">Select Qualification</option>
-                <option value="bachelors">Bachelor's Degree</option>
-                <option value="masters">Master's Degree</option>
-                <option value="phd">Ph.D.</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            {/* Certificate Upload */}
+            {/* Certificate Upload (Full Width) */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Certificate
@@ -285,6 +420,7 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   onChange={handleFileChange}
                   className="hidden"
                   id="certificate"
+                  name="certificate"
                   required
                 />
                 <label
@@ -297,43 +433,6 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
                   </span>
                 </label>
               </div>
-            </div>
-
-            {/* Teaching Experience */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Teaching Experience (Years)
-              </label>
-              <input
-                type="number"
-                name="experience"
-                min="0"
-                max="50"
-                placeholder="5"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              />
-            </div>
-
-            {/* Preferred Subject */}
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Preferred Subject
-              </label>
-              <select
-                name="subject"
-                className="w-full px-4 py-2 bg-black/50 border border-gray-800 rounded-lg focus:outline-none focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D] transition-all placeholder-gray-500"
-                required
-              >
-                <option value="">Select Subject</option>
-                <option value="mathematics">Mathematics</option>
-                <option value="physics">Physics</option>
-                <option value="chemistry">Chemistry</option>
-                <option value="biology">Biology</option>
-                <option value="computer_science">Computer Science</option>
-                <option value="english">English</option>
-                <option value="other">Other</option>
-              </select>
             </div>
 
             <button
