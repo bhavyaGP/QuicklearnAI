@@ -26,6 +26,7 @@ async function handlelogin(req, res) {
             }
         } else if (role === 'teacher') {
             user = await teacher.findOne({ email });
+            console.log(user)
             if (user == null || user.password !== password) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }

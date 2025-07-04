@@ -73,7 +73,33 @@ const RecommendationPage = () => {
           allTopics.map(t => t.topic)
         );
         console.log('Video data received:', videoData); // Debug log
-        setVideos(videoData);
+        
+        // Process the video data properly - it might be nested
+        if (videoData && typeof videoData === 'object') {
+          // Check if videoData has the expected structure
+          const processedVideos = {};
+          
+          // Handle different possible response structures
+          if (Array.isArray(videoData)) {
+            // If it's an array, try to map it to topics
+            allTopics.forEach((topicObj, index) => {
+              if (videoData[index]) {
+                processedVideos[topicObj.topic] = Array.isArray(videoData[index]) 
+                  ? videoData[index] 
+                  : [videoData[index]];
+              }
+            });
+          } else if (videoData.data) {
+            // If it has a data property
+            Object.assign(processedVideos, videoData.data);
+          } else {
+            // Direct object mapping
+            Object.assign(processedVideos, videoData);
+          }
+          
+          console.log('Processed videos:', processedVideos); // Debug log
+          setVideos(processedVideos);
+        }
       } catch (error) {
         console.error('Error fetching videos:', error);
       }
@@ -101,9 +127,11 @@ const RecommendationPage = () => {
       setGeneratingQuestions(topic);
       toast.info(`Generating practice questions for ${topic}...`);
       
-      await questionBankService.generateQuestionBank(topic);
+      const success = await questionBankService.generateQuestionBank(topic);
       
-      toast.success(`Practice questions for ${topic} have been generated!`);
+      if (success) {
+        toast.success(`Practice questions for ${topic} have been generated and downloaded!`);
+      }
     } catch (error) {
       console.error('Error generating practice questions:', error);
       toast.error(error.message || 'Failed to generate practice questions');
@@ -143,20 +171,19 @@ const RecommendationPage = () => {
           <p>Videos Object Keys: {Object.keys(videos).join(', ')}</p>
         </div>
 
-        {/* Video Recommendations */}
-        {recommendedTopics.length > 0 && (
+        {/* Video Recommendations Section - Show all videos at bottom */}
+        {Object.keys(videos).length > 0 && (
           <div className="space-y-8">
-            <h2 className="text-3xl font-bold text-[#00FF9D] mb-6">Recommended Learning</h2>
-            {recommendedTopics.map(({ topic }) => {
-              console.log('Rendering topic:', topic);
-              console.log('Videos for topic:', videos[topic]);
+            <h2 className="text-3xl font-bold text-[#00FF9D] mb-6">YouTube Video Recommendations</h2>
+            {Object.entries(videos).map(([topic, topicVideos]) => {
+              console.log('Rendering topic videos:', topic, topicVideos);
               
               return (
                 <div key={topic} className="space-y-4">
                   <h3 className="text-2xl font-semibold text-white">{topic}</h3>
-                  {videos[topic] && videos[topic].length > 0 ? (
+                  {Array.isArray(topicVideos) && topicVideos.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {videos[topic].map((videoUrl, index) => {
+                      {topicVideos.map((videoUrl, index) => {
                         console.log('Processing video URL:', videoUrl);
                         const videoId = videoUrl.match(/(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
                         
@@ -225,9 +252,12 @@ const RecommendationPage = () => {
                     {generatingQuestions === topic && (
                       <div className="flex items-center space-x-2 text-[#00FF9D]">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                        <span>Generating...</span>
+                        <span>Downloading...</span>
                       </div>
                     )}
+                  </div>
+                  <div className="mt-4 text-sm text-gray-500">
+                    Click to generate and download practice questions PDF
                   </div>
                 </button>
               ))}
@@ -245,4 +275,4 @@ const RecommendationPage = () => {
   );
 };
 
-export default RecommendationPage; 
+export default RecommendationPage;

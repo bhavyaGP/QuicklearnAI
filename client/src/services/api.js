@@ -680,7 +680,7 @@ export const questionBankService = {
       const response = await api.post('/api/question_bank', 
         { topic },
         { 
-          responseType: 'blob',
+          responseType: 'blob', // Important: Set response type to blob for binary data
           headers: {
             'Content-Type': 'application/json'
           }
@@ -689,13 +689,38 @@ export const questionBankService = {
       
       // Create and save the PDF file
       const blob = new Blob([response.data], { type: 'application/pdf' });
-      saveAs(blob, `${topic.replace(/\s+/g, '_')}_Questions.pdf`);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${topic.replace(/\s+/g, '_')}_Questions.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       return true;
     } catch (error) {
       console.error('Question bank generation error:', error);
       if (error.response) {
-        throw new Error(error.response.data.error || 'Failed to generate question bank');
+        // Handle error response
+        if (error.response.data instanceof Blob) {
+          // If error response is also a blob, try to read it as text
+          const text = await error.response.data.text();
+          try {
+            const errorObj = JSON.parse(text);
+            throw new Error(errorObj.error || 'Failed to generate question bank');
+          } catch {
+            throw new Error('Failed to generate question bank');
+          }
+        } else {
+          throw new Error(error.response.data.error || 'Failed to generate question bank');
+        }
       } else if (error.request) {
         throw new Error('No response from server');
       } else {
@@ -711,13 +736,23 @@ export const youtubeService = {
       const response = await api.post(`/api/youtube_videos`, {
         topic: Array.isArray(topics) ? topics : [topics]
       });
-      print("the array is: ",topics)
       
-      if (!response.data || !response.data.success) {
-        throw new Error(response.data?.error || 'Failed to get video recommendations');
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
 
-      return response.data.data;
+      // Handle different response structures
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      } else if (response.data.videos) {
+        return response.data.videos;
+      } else if (Array.isArray(response.data)) {
+        return response.data;
+      } else {
+        // If it's a direct object mapping
+        return response.data;
+      }
     } catch (error) {
       console.error('Error getting video recommendations:', error);
       if (error.response) {
