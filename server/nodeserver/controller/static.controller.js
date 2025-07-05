@@ -42,20 +42,29 @@ async function handlelogin(req, res) {
             user.isOnline = true;
             //insert the user to the redis
             redis.sadd('online_teachers', user._id);
-            const subjects = user.subject.map(sub => ({
-                field: sub.field,
-                subcategory: sub.subcategory
-            }));
+            
+            // Safely handle subjects array - check if it exists and has items
+            let subjects = [];
+            if (user.subject && Array.isArray(user.subject) && user.subject.length > 0) {
+                subjects = user.subject.map(sub => ({
+                    field: sub.field || '',
+                    subcategory: sub.subcategory || ''
+                }));
+            } else {
+                // Default empty subject if none exists
+                subjects = [{ field: '', subcategory: '' }];
+            }
+            
             console.log('field', subjects[0].field, 
                 "subcategory", subjects[0].subcategory)
             redis.hmset(`teacher:${user._id}`, 
                 'email', user.email, 
                 'username', user.username, 
-                'rating', user.rating, 
-                'doubtsSolved', user.doubtsSolved, 
+                'rating', user.rating || 0, 
+                'doubtsSolved', user.doubtsSolved || 0, 
                 'field', subjects[0].field, 
                 "subcategory", subjects[0].subcategory, 
-                'certification', JSON.stringify(user.certification)
+                'certification', JSON.stringify(user.certification || [])
             );
         } else {
             return res.status(400).json({ message: 'Invalid role' });
@@ -79,13 +88,13 @@ async function handlelogin(req, res) {
             _id: user._id,
             email: user.email,
             username: user.username,
-            isOnline: user.isOnline,
-            avatar: user.avatar,
+            isOnline: user.isOnline || false,
+            avatar: user.avatar || '',
             role: role,
-            rating: user.rating,
-            doubtsSolved: user.doubtsSolved,
-            subject: user.subject,
-            certification: user.certification
+            rating: user.rating || 0,
+            doubtsSolved: user.doubtsSolved || 0,
+            subject: user.subject || [],
+            certification: user.certification || []
         };
 
         // Add membership details for students
@@ -170,7 +179,7 @@ async function handleregister(req, res) {
             const {
                 highestQualification,
                 experience,
-                field,
+                subject,
                 subcategory,
                 certification
             } = req.body;
@@ -180,18 +189,17 @@ async function handleregister(req, res) {
                 return res.status(400).json({ message: 'Teacher already exists' });
             }
 
-            // Process subject data to ensure correct format
+                    // Process subject data to ensure correct format
             let formattedSubjects = [];
-            if (field) {
+            if (subject && subcategory) {
                 // Create subject object with field and subcategory array
                 const subjectObject = {
-                    field: field,
-                    subcategory: Array.isArray(subcategory) ? subcategory : (subcategory ? [subcategory] : [])
+                    field: subject,
+                    subcategory: Array.isArray(subcategory) ? subcategory : [subcategory]
                 };
                 formattedSubjects = [subjectObject];
-            }
-
-            // Create new teacher with required fields and proper subject format
+}
+           // Create new teacher with required fields and proper subject format
             newUser = await teacher.create({
                 email,
                 password: password || '1234', // Required for teachers

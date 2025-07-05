@@ -64,6 +64,29 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     ],
   };
 
+  // Helper function to convert subject value to proper field name
+  const getFieldName = (subjectValue) => {
+    const fieldMap = {
+      mathematics: "Mathematics",
+      physics: "Physics", 
+      chemistry: "Chemistry",
+      biology: "Biology",
+      computer_science: "Computer Engineering",
+      english: "English",
+      other: "Other"
+    };
+    return fieldMap[subjectValue] || subjectValue;
+  };
+
+  // Helper function to convert subcategory value to proper label
+  const getSubcategoryLabel = (subjectValue, subcategoryValue) => {
+    if (subcategories[subjectValue]) {
+      const subcategory = subcategories[subjectValue].find(sub => sub.value === subcategoryValue);
+      return subcategory ? subcategory.label : subcategoryValue;
+    }
+    return subcategoryValue;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -75,6 +98,18 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
 
     // Generate avatar URL using username
     data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`;
+
+   // For teachers, transform subject and subcategory data to match backend format
+if (activeTab === 'teacher') {
+    const subjectValue = data.subject;
+    const subcategoryValue = data.subcategory;
+    
+    // Transform the subject data to match backend format
+    if (subjectValue && subcategoryValue) {
+        data.subject = getFieldName(subjectValue);
+        data.subcategory = getSubcategoryLabel(subjectValue, subcategoryValue);
+    }
+}
 
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/register`, data, {
