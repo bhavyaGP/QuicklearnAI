@@ -22,10 +22,10 @@ async function matchdoubt(req, res) {
             // Parse teacher's subcategories (assuming it's stored as JSON array)
             let teacherSubcategories = [];
             try {
-            teacherSubcategories = teacher.subcategory ? JSON.parse(teacher.subcategory) : [];
+                teacherSubcategories = teacher.subcategory ? JSON.parse(teacher.subcategory) : [];
             } catch (e) {
-            // If subcategory is a string, treat it as single subcategory
-            teacherSubcategories = teacher.subcategory ? [teacher.subcategory] : [];
+                // If subcategory is a string, treat it as single subcategory
+                teacherSubcategories = teacher.subcategory ? [teacher.subcategory] : [];
             }
             
             // Check if teacher's field matches and has relevant subcategory
@@ -34,7 +34,6 @@ async function matchdoubt(req, res) {
             sub.toLowerCase().includes(subcategory.toLowerCase()) || 
             subcategory.toLowerCase().includes(sub.toLowerCase())
             );
-            
             if (fieldMatch && subcategoryMatch) {
             matchedTeachers.push({
                 _id: key.split(':')[1],

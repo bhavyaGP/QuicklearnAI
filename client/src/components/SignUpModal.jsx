@@ -71,7 +71,7 @@ export const SignUpModal = ({ isOpen, onClose, onSwitchToLogin }) => {
       physics: "Physics", 
       chemistry: "Chemistry",
       biology: "Biology",
-      computer_science: "Computer Engineering",
+      computer_science: "Computer Science",
       english: "English",
       other: "Other"
     };

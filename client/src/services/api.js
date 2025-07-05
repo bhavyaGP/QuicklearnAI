@@ -463,7 +463,7 @@ export const quizRoomService = {
       }
 
       const { token } = JSON.parse(userInfo);
-      const response = await api.post('/llm_quiz', {
+      const response = await api.post('/api/llm_quiz', {
         topic,
         num_questions:numQuestions,
         difficulty
@@ -559,6 +559,7 @@ export const paperService = {
         headers: {
           'Content-Type': 'application/json'
         }
+        // Remove responseType: 'blob' since backend returns JSON
       });
       return response.data;
     } catch (error) {
@@ -567,16 +568,32 @@ export const paperService = {
     }
   },
 
-  downloadPaper: async (paper) => {
+  downloadPaper: async (paper, customFilename = null) => {
     try {
-      // Use the full file path from the paper object to download directly
-      const response = await api.get(`/api/download/${paper.path}`, {
-        params: {
-          file_path: paper.path
-        },
+      // Extract just the filename from the full path
+      const filename = paper.path.split('\\').pop().split('/').pop();
+      
+      // Download the specific PDF file using just the filename
+      const response = await api.get(`/api/download/${encodeURIComponent(filename)}`, {
         responseType: 'blob'
       });
-      return response.data;
+      
+      // Create download link for the blob data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = customFilename || paper.filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return true;
     } catch (error) {
       console.error('Paper download error:', error);
       throw error;
